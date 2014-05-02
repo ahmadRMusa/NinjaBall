@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" width="640" height="34" tilewidth="16" tileheight="16">
+ <objectgroup name="physics" width="640" height="34">
+  <object x="764" y="543">
+   <polyline points="0,0 -124,-62 -764,-64"/>
+  </object>
+  <object x="766" y="0">
+   <polyline points="0,0 -125,63 -765,64"/>
+  </object>
+  <object x="2639" y="0">
+   <polyline points="0,0 255,128"/>
+  </object>
+  <object x="2893" y="127">
+   <polyline points="0,0 272,0 276,-63 547,-63 784,-62"/>
+  </object>
+  <object x="3679" y="481">
+   <polyline points="0,0 -511,-1 -510,-65 -788,-65 -1037,61"/>
+  </object>
+  <object x="3678" y="64">
+   <polyline points="0,0 2,-63"/>
+  </object>
+  <object x="3679" y="481">
+   <polyline points="0,0 1,60"/>
+  </object>
+  <object x="766" y="-1">
+   <polyline points="0,0 -1,545"/>
+  </object>
+  <object x="0" y="64">
+   <polyline points="0,0 0,415"/>
+  </object>
+ </objectgroup>
+</map>

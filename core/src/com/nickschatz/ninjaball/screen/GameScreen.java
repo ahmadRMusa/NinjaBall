@@ -21,8 +21,7 @@ import com.nickschatz.ninjaball.Resources;
 import com.nickschatz.ninjaball.entity.Player;
 import com.nickschatz.ninjaball.util.MapBodyManager;
 import com.nickschatz.ninjaball.util.PlayerContactListener;
-
-import java.text.DecimalFormat;
+import com.nickschatz.ninjaball.util.Util;
 
 public class GameScreen implements Screen {
 
@@ -36,7 +35,6 @@ public class GameScreen implements Screen {
     private TiledMapRenderer mapRenderer;
     private Stage stage;
     private Label debugLabel;
-    private DecimalFormat rotationFormat;
 
     private Player thePlayer;
 
@@ -62,7 +60,6 @@ public class GameScreen implements Screen {
         style.font = game.defaultFont;
         debugLabel = new Label("Debug!", style);
         stage.addActor(debugLabel);
-        rotationFormat = new DecimalFormat("0.##");
     }
 
     @Override
@@ -91,10 +88,6 @@ public class GameScreen implements Screen {
             camera.position.y = thePlayer.getPosition().y;
         }
         if (!game.useAccelerometer) {
-            camera.rotate(new Vector3(0, 0, 1),
-                    (Gdx.input.isKeyPressed(Input.Keys.LEFT) ? -rotationRate : 0) +
-                            (Gdx.input.isKeyPressed(Input.Keys.RIGHT) ? rotationRate : 0)
-            );
             rotation += (Gdx.input.isKeyPressed(Input.Keys.LEFT) ? -rotationRate : 0) +
                     (Gdx.input.isKeyPressed(Input.Keys.RIGHT) ? rotationRate : 0);
         }
@@ -102,14 +95,27 @@ public class GameScreen implements Screen {
             rotation = Gdx.input.getAccelerometerY() * 9; //Shift values from [10...-10] to [90...-90]
 
         }
-        debugLabel.setText("Rotation: " + rotationFormat.format(rotation) + " FPS: " + Gdx.graphics.getFramesPerSecond() + " J: " + thePlayer.canJump());
+
+        if (rotation > 90) {
+            rotation = 90;
+        }
+        else if (rotation < -90) {
+            rotation = -90;
+        }
+        if (!game.useAccelerometer) {
+            camera.rotate(new Vector3(0, 0, 1),
+                    (Util.getCameraCurrentXYAngle(camera) + rotation)
+            );
+        }
+
+        debugLabel.setText("Rotation: " + rotation + " FPS: " + Gdx.graphics.getFramesPerSecond() + " J: " + thePlayer.canJump());
 
         stage.draw();
 
         Vector2 playerGrav = world.getGravity().cpy().rotate(rotation).scl(thePlayer.getBody().getMass());
 
         if ((Gdx.input.isTouched() || Gdx.input.isKeyPressed(Input.Keys.SPACE)) && thePlayer.canJump()) {
-            thePlayer.getBody().applyLinearImpulse(playerGrav.rotate(180).scl(2), thePlayer.getBody().getWorldCenter(), true);
+            thePlayer.getBody().applyLinearImpulse(playerGrav.cpy().rotate(180).scl(2), thePlayer.getBody().getWorldCenter(), true);
         }
 
         //Apply fake gravity

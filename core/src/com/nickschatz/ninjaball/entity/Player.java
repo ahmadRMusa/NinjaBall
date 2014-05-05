@@ -6,8 +6,10 @@ import com.badlogic.gdx.physics.box2d.*;
 public class Player {
     private Body myBody;
     private boolean canJump = true;
+    private final float radius;
 
-    public Player(World world, float x, float y) {
+    public Player(World world, float x, float y, float radius) {
+        this.radius = radius;
         // First we create a body definition
         BodyDef bodyDef = new BodyDef();
 // We set our body to dynamic, for something like ground which doesn't move we would set it to StaticBody
@@ -20,7 +22,7 @@ public class Player {
 
 // Create a circle shape and set its radius to 6
         CircleShape circle = new CircleShape();
-        circle.setRadius(6f);
+        circle.setRadius(radius);
 
 // Create a fixture definition to apply our shape to
         FixtureDef fixtureDef = new FixtureDef();
@@ -54,5 +56,13 @@ public class Player {
 
     public boolean canJump() {
         return canJump;
+    }
+
+    public float getRadius() {
+        return radius;
+    }
+
+    public float getRotation() {
+        return this.getBody().getAngle();
     }
 }

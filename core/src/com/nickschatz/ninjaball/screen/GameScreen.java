@@ -6,6 +6,8 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapRenderer;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
@@ -35,6 +37,7 @@ public class GameScreen implements Screen {
     private TiledMapRenderer mapRenderer;
     private Stage stage;
     private Label debugLabel;
+    private Texture ball;
 
     private Player thePlayer;
 
@@ -47,13 +50,14 @@ public class GameScreen implements Screen {
         debugRenderer = new Box2DDebugRenderer();
 
         world.setContactListener(new PlayerContactListener());
-        thePlayer = new Player(world, 100, 300);
+        thePlayer = new Player(world, 100, 300, 6f);
 
         mapBodyManager = new MapBodyManager(world, 1.0f, Gdx.files.internal("data/materials.json"), Application.LOG_DEBUG);
-        TiledMap map = Resources.get().get("data/stage1.tmx", TiledMap.class);
-        mapRenderer = new OrthogonalTiledMapRenderer(map, 2.0f, game.batch);
+        TiledMap map = Resources.get().get("data/test2.tmx", TiledMap.class);
+        mapRenderer = new OrthogonalTiledMapRenderer(map, 1, game.batch);
         mapBodyManager.createPhysics(map, "physics");
 
+        ball = Resources.get().get("data/ball64x64.png", Texture.class);
 
         stage = new Stage(new ScreenViewport(), game.batch);
         Label.LabelStyle style = new Label.LabelStyle();
@@ -108,9 +112,7 @@ public class GameScreen implements Screen {
             );
         }
 
-        debugLabel.setText("Rotation: " + rotation + " FPS: " + Gdx.graphics.getFramesPerSecond() + " J: " + thePlayer.canJump());
 
-        stage.draw();
 
         Vector2 playerGrav = world.getGravity().cpy().rotate(rotation).scl(thePlayer.getBody().getMass());
 
@@ -123,13 +125,32 @@ public class GameScreen implements Screen {
                 playerGrav,
                 thePlayer.getBody().getWorldCenter(), true);
 
-
         world.step(1/30f, 6, 2);
 
 
-        mapRenderer.setView(camera);
+
+        mapRenderer.setView(camera.combined, 0, 0, 1000, 1000);
         mapRenderer.render();
-        debugRenderer.render(world, camera.combined);
+        //debugRenderer.render(world, camera.combined);
+
+        int textureWidth = ball.getWidth();
+        int textureHeight = ball.getHeight();
+
+        TextureRegion region = new TextureRegion(ball, 0, 0, textureWidth, textureHeight);
+
+        game.batch.begin();
+        game.batch.draw(region,
+                thePlayer.getPosition().x - thePlayer.getRadius(),
+                thePlayer.getPosition().y - thePlayer.getRadius(),
+                thePlayer.getRadius(),
+                thePlayer.getRadius(),
+                thePlayer.getRadius()*2,
+                thePlayer.getRadius()*2, 1, 1, (float) Math.toDegrees(thePlayer.getRotation()), false);
+        game.batch.end();
+
+        debugLabel.setText("Rotation: " + rotation + " FPS: " + Gdx.graphics.getFramesPerSecond() + " J: " + thePlayer.canJump());
+
+        stage.draw();
     }
 
     @Override
@@ -159,6 +180,6 @@ public class GameScreen implements Screen {
 
     @Override
     public void dispose() {
-
+        mapBodyManager.destroyPhysics();
     }
 }

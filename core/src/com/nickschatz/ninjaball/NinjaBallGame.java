@@ -5,6 +5,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.assets.loaders.resolvers.InternalFileHandleResolver;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.maps.tiled.TiledMap;
@@ -30,7 +31,8 @@ public class NinjaBallGame extends Game {
 		batch = new SpriteBatch();
 
         Resources.get().setLoader(TiledMap.class, new TmxMapLoader(new InternalFileHandleResolver()));
-        Resources.get().load("data/stage1.tmx", TiledMap.class);
+        Resources.get().load("data/test2.tmx", TiledMap.class);
+        Resources.get().load("data/ball64x64.png", Texture.class);
 
         useAccelerometer = Gdx.input.isPeripheralAvailable(Input.Peripheral.Accelerometer);
         log.info("Accelerometer IS " + (useAccelerometer ? "" : "NOT ") + "availiable");

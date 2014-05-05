@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.0" orientation="orthogonal" width="640" height="34" tilewidth="16" tileheight="16">
+ <tileset firstgid="1" name="bgchip" tilewidth="16" tileheight="16" margin="16">
+  <image source="bgchip.png" width="256" height="512"/>
+ </tileset>
  <objectgroup name="physics" width="640" height="34">
   <object x="764" y="543">
    <polyline points="0,0 -124,-62 -764,-64"/>
@@ -29,4 +32,9 @@
    <polyline points="0,0 0,415"/>
   </object>
  </objectgroup>
+ <layer name="Tile Layer 1" width="640" height="34">
+  <data encoding="base64" compression="zlib">
+   eJzt2T1OlVEUhtE9oisCligoJf6XiqIlSqzxD0pR0FI04oycgg7ASbjfnEOsjXaulbyBwHfvpXyyOaqqrd7z3rXeSu9J71LvXW+9d9T70nva2+jd7r3tnfZe9g56r3pLvYu9N707vQe9td7X3l7v/nz+fe9q73Jvu/esd3d+vTmfO5vPHPce9hbz/bJvve+9HwUAwJ/arNFg2X6NzkvbpdPSd8u96/NrGu5xjc5LB36o0WjpwvTbbo2me12j2170btVowZX5+881Gu9jb6f3qUZ77s/3Opg/z+efN+DefE0+W/cBAPyd3Npy68v9Lq12pUaLHdbovkc1miw3v3Ta+U3wQo2my/PpvcV8XW6F6cc04Y0aN718n45brXH7u1ejM3PXSyOuze/zmenK3BDTe6dzug8A4N85qXGz26nRcmm+Rf3uuXRYboS59eUOl05M4+U2d1jjfpdG3J7vk9fn3pfOS7vlf8FL8/fpwbTi7nz98Xwu3ZkGTfdtzb/jZO5n6T4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/l+/AMTWSxQ=
+  </data>
+ </layer>
 </map>

@@ -23,16 +23,19 @@
 
 package com.nickschatz.ninjaball.screen;
 
+import box2dLight.RayHandler;
 import com.badlogic.gdx.Application;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapRenderer;
+import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
@@ -40,17 +43,20 @@ import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.utils.Logger;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.nickschatz.ninjaball.NinjaBallGame;
 import com.nickschatz.ninjaball.Resources;
 import com.nickschatz.ninjaball.entity.Player;
 import com.nickschatz.ninjaball.util.MapBodyManager;
 import com.nickschatz.ninjaball.util.PlayerContactListener;
+import com.nickschatz.ninjaball.util.TiledLightManager;
 import com.nickschatz.ninjaball.util.Util;
 
 public class GameScreen implements Screen {
 
-    private final Box2DDebugRenderer debugRenderer;
+    private TiledLightManager lightManager;
+    private Box2DDebugRenderer debugRenderer;
     private World world;
     private OrthographicCamera camera;
     private NinjaBallGame game;
@@ -61,6 +67,7 @@ public class GameScreen implements Screen {
     private Stage stage;
     private Label debugLabel;
     private Texture ball;
+    private TiledMap map;
 
     private Player thePlayer;
 
@@ -76,7 +83,8 @@ public class GameScreen implements Screen {
         thePlayer = new Player(world, 100, 300, 6f);
 
         mapBodyManager = new MapBodyManager(world, 1.0f, Gdx.files.internal("data/materials.json"), Application.LOG_DEBUG);
-        TiledMap map = Resources.get().get("data/test2.tmx", TiledMap.class);
+
+        map = Resources.get().get("data/test2.tmx", TiledMap.class);
         mapRenderer = new OrthogonalTiledMapRenderer(map, 1, game.batch);
         mapBodyManager.createPhysics(map, "physics");
 
@@ -87,6 +95,10 @@ public class GameScreen implements Screen {
         style.font = game.defaultFont;
         debugLabel = new Label("Debug!", style);
         stage.addActor(debugLabel);
+
+        lightManager = new TiledLightManager(new RayHandler(world), map, "lights", Logger.DEBUG);
+        lightManager.setAmbientLight(new Color(0.01f, 0.01f, 0.01f, 1f));
+        map.getTileSets().getTileSet("lights");
     }
 
     @Override
@@ -152,28 +164,38 @@ public class GameScreen implements Screen {
 
 
 
-        mapRenderer.setView(camera.combined, 0, 0, 1000, 1000);
-        mapRenderer.render();
+        mapRenderer.setView(camera.combined, 0, 0, 1000, 1000); //Dirty Fix. I should do something about it.
+        game.batch.begin();
+        mapRenderer.renderTileLayer((TiledMapTileLayer) map.getLayers().get("background"));
         //debugRenderer.render(world, camera.combined);
 
         int textureWidth = ball.getWidth();
         int textureHeight = ball.getHeight();
 
         TextureRegion region = new TextureRegion(ball, 0, 0, textureWidth, textureHeight);
-
-        game.batch.begin();
         game.batch.draw(region,
                 thePlayer.getPosition().x - thePlayer.getRadius(),
                 thePlayer.getPosition().y - thePlayer.getRadius(),
                 thePlayer.getRadius(),
                 thePlayer.getRadius(),
-                thePlayer.getRadius()*2,
-                thePlayer.getRadius()*2, 1, 1, (float) Math.toDegrees(thePlayer.getRotation()), false);
+                thePlayer.getRadius() * 2,
+                thePlayer.getRadius() * 2, 1, 1, (float) Math.toDegrees(thePlayer.getRotation()), false);
+        mapRenderer.renderTileLayer((TiledMapTileLayer) map.getLayers().get("foreground"));
         game.batch.end();
+
+        //Everything before this is lit
+        lightManager.setCombinedMatrix(camera.combined);
+        lightManager.updateAndRender();
+
+        //Everything after this is unlit
+
+
 
         debugLabel.setText("Rotation: " + rotation + " FPS: " + Gdx.graphics.getFramesPerSecond() + " J: " + thePlayer.canJump());
 
         stage.draw();
+
+
     }
 
     @Override
@@ -204,5 +226,6 @@ public class GameScreen implements Screen {
     @Override
     public void dispose() {
         mapBodyManager.destroyPhysics();
+        lightManager.dispose();
     }
 }

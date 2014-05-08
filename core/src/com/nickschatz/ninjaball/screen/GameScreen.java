@@ -37,10 +37,11 @@ import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapRenderer;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
-import com.badlogic.gdx.physics.box2d.World;
+import com.badlogic.gdx.physics.box2d.*;
+import com.badlogic.gdx.physics.box2d.joints.RevoluteJointDef;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.utils.Logger;
@@ -147,12 +148,25 @@ public class GameScreen implements Screen {
             );
         }
 
-
-
         Vector2 playerGrav = world.getGravity().cpy().rotate(rotation).scl(thePlayer.getBody().getMass());
 
-        if ((Gdx.input.isTouched() || Gdx.input.isKeyPressed(Input.Keys.SPACE)) && thePlayer.canJump()) {
-            thePlayer.getBody().applyLinearImpulse(playerGrav.cpy().rotate(180).scl(2), thePlayer.getBody().getWorldCenter(), true);
+        if (Gdx.app.getType() == Application.ApplicationType.Android) {
+            if (Gdx.input.isTouched()) {
+                if (Gdx.input.getX() > Gdx.graphics.getWidth() / 2 && thePlayer.canJump()) {
+                    jump(playerGrav);
+                }
+                else if (Gdx.input.getX() <= Gdx.graphics.getWidth() / 2) {
+                    rope(playerGrav);
+                }
+            }
+        }
+        else if (Gdx.app.getType() == Application.ApplicationType.WebGL) {
+            if (Gdx.input.isKeyPressed(Input.Keys.Z)) {
+                jump(playerGrav);
+            }
+            else if (Gdx.input.isKeyPressed(Input.Keys.X)) {
+                rope(playerGrav);
+            }
         }
 
         //Apply fake gravity
@@ -167,7 +181,7 @@ public class GameScreen implements Screen {
         mapRenderer.setView(camera.combined, 0, 0, 1000, 1000); //Dirty Fix. I should do something about it.
         game.batch.begin();
         mapRenderer.renderTileLayer((TiledMapTileLayer) map.getLayers().get("background"));
-        //debugRenderer.render(world, camera.combined);
+        debugRenderer.render(world, camera.combined);
 
         int textureWidth = ball.getWidth();
         int textureHeight = ball.getHeight();
@@ -196,6 +210,75 @@ public class GameScreen implements Screen {
         stage.draw();
 
 
+    }
+
+    private void jump(Vector2 playerGrav) {
+        thePlayer.getBody().applyLinearImpulse(playerGrav.cpy().rotate(180).scl(2), thePlayer.getBody().getWorldCenter(), true);
+    }
+    private void rope(Vector2 playerGrav) {
+        game.log.info("rope");
+        final Vector2 ropeAnchorPos = new Vector2(0,0);
+
+        world.rayCast(new RayCastCallback() {
+                          @Override
+                          public float reportRayFixture(Fixture fixture, Vector2 point, Vector2 normal, float fraction) {
+
+                              game.log.info("hit");
+                              ropeAnchorPos.set(point);
+
+                              return 1;
+                          }
+                      },
+                thePlayer.getPosition(),
+                thePlayer.getPosition().cpy().add(playerGrav.cpy().rotate(180).nor().scl(3)));
+        game.log.info(ropeAnchorPos.toString());
+        game.log.info(thePlayer.getPosition().cpy().add(playerGrav.cpy().rotate(180).nor().scl(3)).toString());
+        if (ropeAnchorPos.len() == 0) {
+            return;
+        }
+        BodyDef pointBodyDef = new BodyDef();
+        pointBodyDef.type = BodyDef.BodyType.KinematicBody;
+        pointBodyDef.position.set(ropeAnchorPos);
+
+
+        Body point = world.createBody(pointBodyDef);
+        CircleShape circle = new CircleShape();
+        circle.setRadius(0);
+        FixtureDef fixtureDef = new FixtureDef();
+        fixtureDef.shape = circle;
+        point.createFixture(fixtureDef);
+        point.setGravityScale(0);
+        circle.dispose();
+
+        FixtureDef eachRingFD = new FixtureDef();
+        PolygonShape polyShape = new PolygonShape();
+        polyShape.setAsBox(1, 1);
+        eachRingFD.shape = polyShape;
+
+        RevoluteJointDef jd = new RevoluteJointDef();
+        Body prevBody = point;
+        
+        int ringCount = 10;
+
+        float angle = thePlayer.getPosition().sub(ropeAnchorPos).angle();
+        
+        for(int i=0; i<ringCount; i++)
+        {
+            BodyDef bd = new BodyDef();
+            bd.type = BodyDef.BodyType.DynamicBody;
+            bd.angle = angle- MathUtils.PI/2;
+            float EACH_RING_DISTANCE = 1.0f;
+            bd.position.set(ropeAnchorPos.x + i*MathUtils.cos(angle)*EACH_RING_DISTANCE,
+                    ropeAnchorPos.y + i*MathUtils.sin(angle)*EACH_RING_DISTANCE);
+            Body body = world.createBody(bd);
+            body.createFixture(eachRingFD);
+
+            Vector2 anchor = new Vector2(bd.position.x - MathUtils.cos(angle)*EACH_RING_DISTANCE/2f,
+                    bd.position.y - MathUtils.sin(angle)*EACH_RING_DISTANCE/2f);
+            jd.initialize(prevBody, body, anchor);
+            prevBody = body;
+        }
+        polyShape.dispose();
     }
 
     @Override

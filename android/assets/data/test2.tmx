@@ -29,4 +29,7 @@
    </properties>
   </object>
  </objectgroup>
+ <objectgroup name="objects" width="44" height="29">
+  <object name="box" x="193" y="192" width="30" height="27"/>
+ </objectgroup>
 </map>

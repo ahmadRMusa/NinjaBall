@@ -32,6 +32,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapRenderer;
@@ -42,13 +43,19 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.physics.box2d.joints.RevoluteJointDef;
+import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.utils.Logger;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.nickschatz.ninjaball.NinjaBallGame;
 import com.nickschatz.ninjaball.Resources;
 import com.nickschatz.ninjaball.entity.Player;
+import com.nickschatz.ninjaball.input.GameInput;
 import com.nickschatz.ninjaball.util.MapBodyManager;
 import com.nickschatz.ninjaball.util.PlayerContactListener;
 import com.nickschatz.ninjaball.util.TiledLightManager;
@@ -65,12 +72,17 @@ public class GameScreen implements Screen {
     private float rotationRate = 0.5f;
     private MapBodyManager mapBodyManager;
     private TiledMapRenderer mapRenderer;
-    private Stage stage;
-    private Label debugLabel;
+
     private Texture ball;
     private TiledMap map;
+    private boolean isPaused = false;
 
     private Player thePlayer;
+
+    private Stage stage;
+    private Label debugLabel;
+    private Table table;
+    private Skin skin;
 
     public GameScreen(NinjaBallGame game) {
         this.game = game;
@@ -96,10 +108,31 @@ public class GameScreen implements Screen {
         style.font = game.defaultFont;
         debugLabel = new Label("Debug!", style);
         stage.addActor(debugLabel);
+        table = new Table();
+        table.setFillParent(true);
+        stage.addActor(table);
+
+
+        TextureAtlas atlas = Resources.get().get("data/uiskin.atlas", TextureAtlas.class);
+        skin = new Skin(Gdx.files.internal("data/uiskin.json"));
+        skin.addRegions(atlas);
+
+        TextButton returnButton = new TextButton("Return", skin);
+        returnButton.addListener(new ChangeListener() {
+            public void changed(ChangeEvent event, Actor actor) {
+                togglePause();
+            }
+        });
+        table.add(returnButton).padBottom(50).row();
+        table.add(new TextButton("Exit", skin));
+        table.debug();
 
         lightManager = new TiledLightManager(new RayHandler(world), map, "lights", Logger.DEBUG);
         lightManager.setAmbientLight(new Color(0.01f, 0.01f, 0.01f, 1f));
-        map.getTileSets().getTileSet("lights");
+        lightManager.setCulling(false); //Culling doesn't work well with rotation
+
+        Gdx.input.setInputProcessor(new GameInput(this, stage));
+        Gdx.input.setCatchBackKey(true);
     }
 
     @Override
@@ -109,79 +142,80 @@ public class GameScreen implements Screen {
         camera.update();
         game.batch.setProjectionMatrix(camera.combined);
 
-        if (Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)) {
-            if (Gdx.input.isKeyPressed(Input.Keys.A)) {
-                camera.position.x -= 1;
+        if (!isPaused) {
+            if (Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)) {
+                if (Gdx.input.isKeyPressed(Input.Keys.A)) {
+                    camera.position.x -= 1;
+                }
+                if (Gdx.input.isKeyPressed(Input.Keys.W)) {
+                    camera.position.y += 1;
+                }
+                if (Gdx.input.isKeyPressed(Input.Keys.D)) {
+                    camera.position.x += 1;
+                }
+                if (Gdx.input.isKeyPressed(Input.Keys.S)) {
+                    camera.position.y -= 1;
+                }
             }
-            if (Gdx.input.isKeyPressed(Input.Keys.W)) {
-                camera.position.y += 1;
+            else {
+                camera.position.x = thePlayer.getPosition().x;
+                camera.position.y = thePlayer.getPosition().y;
             }
-            if (Gdx.input.isKeyPressed(Input.Keys.D)) {
-                camera.position.x += 1;
+            if (!game.useAccelerometer) {
+                rotation += (Gdx.input.isKeyPressed(Input.Keys.LEFT) ? -rotationRate : 0) +
+                        (Gdx.input.isKeyPressed(Input.Keys.RIGHT) ? rotationRate : 0);
             }
-            if (Gdx.input.isKeyPressed(Input.Keys.S)) {
-                camera.position.y -= 1;
+            else {
+                rotation = Gdx.input.getAccelerometerY() * 9; //Shift values from [10...-10] to [90...-90]
+
             }
-        }
-        else {
-            camera.position.x = thePlayer.getPosition().x;
-            camera.position.y = thePlayer.getPosition().y;
-        }
-        if (!game.useAccelerometer) {
-            rotation += (Gdx.input.isKeyPressed(Input.Keys.LEFT) ? -rotationRate : 0) +
-                    (Gdx.input.isKeyPressed(Input.Keys.RIGHT) ? rotationRate : 0);
-        }
-        else {
-            rotation = Gdx.input.getAccelerometerY() * 9; //Shift values from [10...-10] to [90...-90]
 
-        }
+            if (rotation > 90) {
+                rotation = 90;
+            }
+            else if (rotation < -90) {
+                rotation = -90;
+            }
+            if (!game.useAccelerometer) {
+                camera.rotate(new Vector3(0, 0, 1),
+                        (Util.getCameraCurrentXYAngle(camera) + rotation)
+                );
+            }
 
-        if (rotation > 90) {
-            rotation = 90;
-        }
-        else if (rotation < -90) {
-            rotation = -90;
-        }
-        if (!game.useAccelerometer) {
-            camera.rotate(new Vector3(0, 0, 1),
-                    (Util.getCameraCurrentXYAngle(camera) + rotation)
-            );
-        }
+            Vector2 playerGrav = world.getGravity().cpy().rotate(rotation).scl(thePlayer.getBody().getMass());
 
-        Vector2 playerGrav = world.getGravity().cpy().rotate(rotation).scl(thePlayer.getBody().getMass());
-
-        if (Gdx.app.getType() == Application.ApplicationType.Android) {
-            if (Gdx.input.isTouched()) {
-                if (Gdx.input.getX() > Gdx.graphics.getWidth() / 2 && thePlayer.canJump()) {
+            if (Gdx.app.getType() == Application.ApplicationType.Android) {
+                if (Gdx.input.isTouched()) {
+                    if (Gdx.input.getX() > Gdx.graphics.getWidth() / 2 && thePlayer.canJump()) {
+                        jump(playerGrav);
+                    }
+                    else if (Gdx.input.getX() <= Gdx.graphics.getWidth() / 2) {
+                        rope(playerGrav);
+                    }
+                }
+            }
+            else if (Gdx.app.getType() == Application.ApplicationType.WebGL) {
+                if (Gdx.input.isKeyPressed(Input.Keys.Z) && thePlayer.canJump()) {
                     jump(playerGrav);
                 }
-                else if (Gdx.input.getX() <= Gdx.graphics.getWidth() / 2) {
+                else if (Gdx.input.isKeyPressed(Input.Keys.X)) {
                     rope(playerGrav);
                 }
             }
+
+            //Apply fake gravity
+            thePlayer.getBody().applyForce(
+                    playerGrav,
+                    thePlayer.getBody().getWorldCenter(), true);
+
+            world.step(1 / 30f, 6, 2);
+
         }
-        else if (Gdx.app.getType() == Application.ApplicationType.WebGL) {
-            if (Gdx.input.isKeyPressed(Input.Keys.Z)) {
-                jump(playerGrav);
-            }
-            else if (Gdx.input.isKeyPressed(Input.Keys.X)) {
-                rope(playerGrav);
-            }
-        }
-
-        //Apply fake gravity
-        thePlayer.getBody().applyForce(
-                playerGrav,
-                thePlayer.getBody().getWorldCenter(), true);
-
-        world.step(1/30f, 6, 2);
-
-
 
         mapRenderer.setView(camera.combined, 0, 0, 1000, 1000); //Dirty Fix. I should do something about it.
         game.batch.begin();
         mapRenderer.renderTileLayer((TiledMapTileLayer) map.getLayers().get("background"));
-        debugRenderer.render(world, camera.combined);
+        //debugRenderer.render(world, camera.combined);
 
         int textureWidth = ball.getWidth();
         int textureHeight = ball.getHeight();
@@ -200,14 +234,17 @@ public class GameScreen implements Screen {
         //Everything before this is lit
         lightManager.setCombinedMatrix(camera.combined);
         lightManager.updateAndRender();
-
         //Everything after this is unlit
 
+        if (isPaused) {
+
+            debugLabel.setText("Rotation: " + rotation + " FPS: " + Gdx.graphics.getFramesPerSecond() + " J: " + thePlayer.canJump());
+
+            stage.draw();
+        }
 
 
-        debugLabel.setText("Rotation: " + rotation + " FPS: " + Gdx.graphics.getFramesPerSecond() + " J: " + thePlayer.canJump());
 
-        stage.draw();
 
 
     }
@@ -310,5 +347,13 @@ public class GameScreen implements Screen {
     public void dispose() {
         mapBodyManager.destroyPhysics();
         lightManager.dispose();
+    }
+
+    public void togglePause() {
+        isPaused = !isPaused;
+    }
+
+    public boolean isPaused() {
+        return isPaused;
     }
 }

@@ -23,6 +23,8 @@
 
 package com.nickschatz.ninjaball.input;
 
+import com.badlogic.gdx.Application;
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
@@ -42,6 +44,12 @@ public class GameInput implements InputProcessor {
         if (keycode == Input.Keys.BACK || keycode == Input.Keys.ESCAPE) {
             gameScreen.togglePause();
         }
+        if (keycode == Input.Keys.Z) {
+            gameScreen.rope();
+        }
+        if (keycode == Input.Keys.X) {
+            gameScreen.jump();
+        }
         return gameScreen.isPaused() && stage.keyDown(keycode);
     }
 
@@ -57,6 +65,16 @@ public class GameInput implements InputProcessor {
 
     @Override
     public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+        if (Gdx.app.getType() == Application.ApplicationType.Android) {
+            if (Gdx.input.isTouched()) {
+                if (Gdx.input.getX() > Gdx.graphics.getWidth() / 2) {
+                    gameScreen.jump();
+                }
+                else if (Gdx.input.getX() <= Gdx.graphics.getWidth() / 2) {
+                    gameScreen.rope();
+                }
+            }
+        }
         return gameScreen.isPaused() && stage.touchDown(screenX, screenY, pointer, button);
     }
 

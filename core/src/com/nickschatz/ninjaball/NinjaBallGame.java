@@ -35,7 +35,7 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.utils.Logger;
-import com.nickschatz.ninjaball.screen.GameScreen;
+import com.nickschatz.ninjaball.screen.MenuScreen;
 
 public class NinjaBallGame extends Game {
 	public SpriteBatch batch;
@@ -57,6 +57,7 @@ public class NinjaBallGame extends Game {
         Resources.get().setLoader(TiledMap.class, new TmxMapLoader(new InternalFileHandleResolver()));
         Resources.get().load("data/test2.tmx", TiledMap.class);
         Resources.get().load("data/ball64x64.png", Texture.class);
+        Resources.get().load("data/rope.png", Texture.class);
         Resources.get().load("data/uiskin.atlas", TextureAtlas.class);
 
         useAccelerometer = Gdx.input.isPeripheralAvailable(Input.Peripheral.Accelerometer);
@@ -66,7 +67,7 @@ public class NinjaBallGame extends Game {
 	@Override
 	public void render () {
         if (loading && Resources.get().update()) {
-            setScreen(new GameScreen(this));
+            setScreen(new MenuScreen(this));
             loading = false;
         }
         else if (loading) {

@@ -38,11 +38,11 @@ import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapRenderer;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.*;
-import com.badlogic.gdx.physics.box2d.joints.RevoluteJointDef;
+import com.badlogic.gdx.physics.box2d.joints.DistanceJointDef;
+import com.badlogic.gdx.physics.box2d.joints.RopeJointDef;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
@@ -61,8 +61,12 @@ import com.nickschatz.ninjaball.util.PlayerContactListener;
 import com.nickschatz.ninjaball.util.TiledLightManager;
 import com.nickschatz.ninjaball.util.Util;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class GameScreen implements Screen {
 
+    private Texture ropeTex;
     private TiledLightManager lightManager;
     private Box2DDebugRenderer debugRenderer;
     private World world;
@@ -83,6 +87,10 @@ public class GameScreen implements Screen {
     private Label debugLabel;
     private Table table;
     private Skin skin;
+    private List<Body> ropeBodies;
+    private List<Joint> ropeJoints;
+    private boolean hasRope = false;
+    private Vector2 playerGrav;
 
     public GameScreen(NinjaBallGame game) {
         this.game = game;
@@ -102,6 +110,7 @@ public class GameScreen implements Screen {
         mapBodyManager.createPhysics(map, "physics");
 
         ball = Resources.get().get("data/ball64x64.png", Texture.class);
+        ropeTex = Resources.get().get("data/rope.png", Texture.class);
 
         stage = new Stage(new ScreenViewport(), game.batch);
         Label.LabelStyle style = new Label.LabelStyle();
@@ -125,7 +134,6 @@ public class GameScreen implements Screen {
         });
         table.add(returnButton).padBottom(50).row();
         table.add(new TextButton("Exit", skin));
-        table.debug();
 
         lightManager = new TiledLightManager(new RayHandler(world), map, "lights", Logger.DEBUG);
         lightManager.setAmbientLight(new Color(0.01f, 0.01f, 0.01f, 1f));
@@ -133,11 +141,14 @@ public class GameScreen implements Screen {
 
         Gdx.input.setInputProcessor(new GameInput(this, stage));
         Gdx.input.setCatchBackKey(true);
+
+        ropeJoints = new ArrayList<Joint>();
+        ropeBodies = new ArrayList<Body>();
     }
 
     @Override
     public void render(float delta) {
-        Gdx.gl.glClearColor(0, 0, 0.2f, 1);
+        Gdx.gl.glClearColor(0, 0, 0.0f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         camera.update();
         game.batch.setProjectionMatrix(camera.combined);
@@ -182,26 +193,9 @@ public class GameScreen implements Screen {
                 );
             }
 
-            Vector2 playerGrav = world.getGravity().cpy().rotate(rotation).scl(thePlayer.getBody().getMass());
+            playerGrav = world.getGravity().cpy().rotate(rotation).scl(thePlayer.getBody().getMass());
 
-            if (Gdx.app.getType() == Application.ApplicationType.Android) {
-                if (Gdx.input.isTouched()) {
-                    if (Gdx.input.getX() > Gdx.graphics.getWidth() / 2 && thePlayer.canJump()) {
-                        jump(playerGrav);
-                    }
-                    else if (Gdx.input.getX() <= Gdx.graphics.getWidth() / 2) {
-                        rope(playerGrav);
-                    }
-                }
-            }
-            else if (Gdx.app.getType() == Application.ApplicationType.WebGL) {
-                if (Gdx.input.isKeyPressed(Input.Keys.Z) && thePlayer.canJump()) {
-                    jump(playerGrav);
-                }
-                else if (Gdx.input.isKeyPressed(Input.Keys.X)) {
-                    rope(playerGrav);
-                }
-            }
+
 
             //Apply fake gravity
             thePlayer.getBody().applyForce(
@@ -220,14 +214,51 @@ public class GameScreen implements Screen {
         int textureWidth = ball.getWidth();
         int textureHeight = ball.getHeight();
 
-        TextureRegion region = new TextureRegion(ball, 0, 0, textureWidth, textureHeight);
-        game.batch.draw(region,
+        TextureRegion ballRegion = new TextureRegion(ball, 0, 0, textureWidth, textureHeight);
+        game.batch.draw(ballRegion,
                 thePlayer.getPosition().x - thePlayer.getRadius(),
                 thePlayer.getPosition().y - thePlayer.getRadius(),
                 thePlayer.getRadius(),
                 thePlayer.getRadius(),
                 thePlayer.getRadius() * 2,
                 thePlayer.getRadius() * 2, 1, 1, (float) Math.toDegrees(thePlayer.getRotation()), false);
+        TextureRegion ropeRegion = new TextureRegion(ropeTex, 0, 0, ropeTex.getWidth(), ropeTex.getHeight());
+        for (int i=0;i<ropeBodies.size()-1;i++) {
+
+            Body bodyA = ropeBodies.get(i);
+            Body bodyB = ropeBodies.get(i+1);
+            float angle = bodyA.getPosition().sub(bodyB.getPosition()).cpy().nor().angle();
+            Vector2 midpoint = new Vector2();
+            midpoint.x = (bodyA.getPosition().x - bodyB.getPosition().x) / 2;
+            midpoint.y = (bodyA.getPosition().y - bodyB.getPosition().y) / 2;
+
+            float dst = bodyA.getPosition().dst(bodyB.getPosition());
+
+            Vector2 botLeft = new Vector2();
+            if (bodyA.getPosition().x < bodyB.getPosition().x) {
+                botLeft.x = bodyA.getPosition().x;
+            }
+            else {
+                botLeft.x = bodyB.getPosition().x;
+            }
+            if (bodyA.getPosition().y < bodyB.getPosition().y) {
+                botLeft.y = bodyA.getPosition().y;
+            }
+            else {
+                botLeft.y = bodyB.getPosition().y;
+            }
+
+            game.batch.draw(ropeRegion,
+                    botLeft.x, //X
+                    botLeft.y,
+                    midpoint.x, //OriginX
+                    midpoint.y, //OriginY
+                    10f, //Width
+                    dst, //Height
+                    1,1, //Scale
+                    angle+90  //Rotation
+            );
+        }
         mapRenderer.renderTileLayer((TiledMapTileLayer) map.getLayers().get("foreground"));
         game.batch.end();
 
@@ -249,73 +280,125 @@ public class GameScreen implements Screen {
 
     }
 
-    private void jump(Vector2 playerGrav) {
+    private void doJump(Vector2 playerGrav) {
         thePlayer.getBody().applyLinearImpulse(playerGrav.cpy().rotate(180).scl(2), thePlayer.getBody().getWorldCenter(), true);
     }
-    private void rope(Vector2 playerGrav) {
-        game.log.info("rope");
+    private void doRope(Vector2 playerGrav) {
+        if (hasRope) {
+            hasRope = !hasRope;
+
+            for (Joint j : ropeJoints) {
+                world.destroyJoint(j);
+            }
+            ropeJoints.clear();
+            for (Body b : ropeBodies) {
+                world.destroyBody(b);
+            }
+            ropeBodies.clear();
+            return;
+        }
+
         final Vector2 ropeAnchorPos = new Vector2(0,0);
 
         world.rayCast(new RayCastCallback() {
                           @Override
                           public float reportRayFixture(Fixture fixture, Vector2 point, Vector2 normal, float fraction) {
 
-                              game.log.info("hit");
                               ropeAnchorPos.set(point);
 
                               return 1;
                           }
                       },
                 thePlayer.getPosition(),
-                thePlayer.getPosition().cpy().add(playerGrav.cpy().rotate(180).nor().scl(3)));
-        game.log.info(ropeAnchorPos.toString());
-        game.log.info(thePlayer.getPosition().cpy().add(playerGrav.cpy().rotate(180).nor().scl(3)).toString());
+                thePlayer.getPosition().cpy().add(playerGrav.cpy().rotate(180).nor().scl(1000)));
         if (ropeAnchorPos.len() == 0) {
             return;
         }
-        BodyDef pointBodyDef = new BodyDef();
-        pointBodyDef.type = BodyDef.BodyType.KinematicBody;
-        pointBodyDef.position.set(ropeAnchorPos);
 
+        hasRope = !hasRope;
+        ropeBodies = new ArrayList<Body>();
+        ropeJoints = new ArrayList<Joint>();
 
-        Body point = world.createBody(pointBodyDef);
-        CircleShape circle = new CircleShape();
-        circle.setRadius(0);
-        FixtureDef fixtureDef = new FixtureDef();
-        fixtureDef.shape = circle;
-        point.createFixture(fixtureDef);
-        point.setGravityScale(0);
-        circle.dispose();
+        int distFactor = 6;
 
-        FixtureDef eachRingFD = new FixtureDef();
-        PolygonShape polyShape = new PolygonShape();
-        polyShape.setAsBox(1, 1);
-        eachRingFD.shape = polyShape;
+        Vector2 lastPos = ropeAnchorPos; //set position first body
+        float radBody = 3f;
+        // Body params
+        float density = 0.05f;
+        float restitution = 0.5f;
+        float friction = 0.5f;
+        // Distance joint
+        float dampingRatio = 0.0f;
+        float frequencyHz = 0;
+        // Rope joint
+        float kMaxWidth = 1.1f;
+        // Bodies
+        int countBodyInChain = (int) (thePlayer.getPosition().dst(ropeAnchorPos) / distFactor);
+        Body prevBody = null;
 
-        RevoluteJointDef jd = new RevoluteJointDef();
-        Body prevBody = point;
-        
-        int ringCount = 10;
+        //========Create bodies and joints
+        for (int k = 0; k < countBodyInChain; k++) {
+            BodyDef bodyDef = new BodyDef();
+            if(k==0 ) bodyDef.type = BodyDef.BodyType.StaticBody; //first body is static
+            else bodyDef.type = BodyDef.BodyType.DynamicBody;
+            bodyDef.position.set(lastPos);
+            lastPos = lastPos.add(playerGrav.cpy().nor().scl(distFactor)); //modify b2Vect for next body
+            bodyDef.fixedRotation = true;
+            Body body = world.createBody(bodyDef);
 
-        float angle = thePlayer.getPosition().sub(ropeAnchorPos).angle();
-        
-        for(int i=0; i<ringCount; i++)
-        {
-            BodyDef bd = new BodyDef();
-            bd.type = BodyDef.BodyType.DynamicBody;
-            bd.angle = angle- MathUtils.PI/2;
-            float EACH_RING_DISTANCE = 1.0f;
-            bd.position.set(ropeAnchorPos.x + i*MathUtils.cos(angle)*EACH_RING_DISTANCE,
-                    ropeAnchorPos.y + i*MathUtils.sin(angle)*EACH_RING_DISTANCE);
-            Body body = world.createBody(bd);
-            body.createFixture(eachRingFD);
+            CircleShape distBodyBox = new CircleShape();
+            distBodyBox.setRadius(radBody);
+            FixtureDef fixDef = new FixtureDef();
+            fixDef.density = density;
+            fixDef.restitution = restitution;
+            fixDef.friction = friction;
+            fixDef.shape = distBodyBox;
+            body.createFixture(fixDef);
+            //body.setHealth(9999999);
+            body.setLinearDamping(0.0005f);
 
-            Vector2 anchor = new Vector2(bd.position.x - MathUtils.cos(angle)*EACH_RING_DISTANCE/2f,
-                    bd.position.y - MathUtils.sin(angle)*EACH_RING_DISTANCE/2f);
-            jd.initialize(prevBody, body, anchor);
+            if(k>0) {
+                //Create distance joint
+                DistanceJointDef distJDef = new DistanceJointDef();
+                Vector2 anchor1 = prevBody.getWorldCenter();
+                Vector2 anchor2 = body.getWorldCenter();
+                distJDef.initialize(prevBody, body, anchor1, anchor2);
+                distJDef.collideConnected = false;
+                distJDef.dampingRatio = dampingRatio;
+                distJDef.frequencyHz = frequencyHz;
+                ropeJoints.add(world.createJoint(distJDef));
+
+                //Create rope joint
+                RopeJointDef rDef = new RopeJointDef();
+                rDef.maxLength = (body.getPosition().sub(prevBody.getPosition())).len() * kMaxWidth;
+                rDef.localAnchorA.set(rDef.localAnchorB.set(0,0));
+                rDef.bodyA = prevBody;
+                rDef.bodyB = body;
+                ropeJoints.add(world.createJoint(rDef));
+
+            } //if k>0
             prevBody = body;
+
+            ropeBodies.add(body);
+        } //for
+        if (prevBody != null) {
+            DistanceJointDef distJDef = new DistanceJointDef();
+            Vector2 anchor1 = prevBody.getWorldCenter();
+            Vector2 anchor2 = thePlayer.getBody().getWorldCenter();
+            distJDef.initialize(prevBody, thePlayer.getBody(), anchor1, anchor2);
+            distJDef.collideConnected = false;
+            distJDef.dampingRatio = dampingRatio;
+            distJDef.frequencyHz = frequencyHz;
+            world.createJoint(distJDef);
+
+            //Create rope joint
+            RopeJointDef rDef = new RopeJointDef();
+            rDef.maxLength = (thePlayer.getPosition().sub(prevBody.getPosition())).len() * kMaxWidth;
+            rDef.localAnchorA.set(rDef.localAnchorB.set(0, 0));
+            rDef.bodyA = prevBody;
+            rDef.bodyB = thePlayer.getBody();
+            world.createJoint(rDef);
         }
-        polyShape.dispose();
     }
 
     @Override
@@ -355,5 +438,14 @@ public class GameScreen implements Screen {
 
     public boolean isPaused() {
         return isPaused;
+    }
+
+    public void rope() {
+        doRope(playerGrav);
+    }
+
+    public void jump() {
+        if (thePlayer.canJump())
+            doJump(playerGrav);
     }
 }

@@ -32,11 +32,11 @@ public class PlayerContactListener implements com.badlogic.gdx.physics.box2d.Con
 
     @Override
     public void beginContact(Contact contact) {
-        if (contact.getFixtureA().getBody().getUserData() instanceof Player) {
+        if (contact.getFixtureA() != null && contact.getFixtureA().getBody() != null && contact.getFixtureA().getBody().getUserData() instanceof Player) {
             Player player = (Player) contact.getFixtureA().getBody().getUserData();
             player.setCanJump(true);
         }
-        else if (contact.getFixtureB().getBody().getUserData() instanceof Player) {
+        else if (contact.getFixtureB() != null && contact.getFixtureB().getBody() != null && contact.getFixtureB().getBody().getUserData() instanceof Player) {
             Player player = (Player) contact.getFixtureB().getBody().getUserData();
             player.setCanJump(true);
         }
@@ -44,11 +44,11 @@ public class PlayerContactListener implements com.badlogic.gdx.physics.box2d.Con
 
     @Override
     public void endContact(Contact contact) {
-        if (contact.getFixtureA().getBody().getUserData() instanceof Player) {
+        if (contact.getFixtureA() != null && contact.getFixtureA().getBody() != null && contact.getFixtureA().getBody().getUserData() instanceof Player) {
             Player player = (Player) contact.getFixtureA().getBody().getUserData();
             player.setCanJump(false);
         }
-        else if (contact.getFixtureB().getBody().getUserData() instanceof Player) {
+        else if (contact.getFixtureB() != null && contact.getFixtureB().getBody() != null && contact.getFixtureB().getBody().getUserData() instanceof Player) {
             Player player = (Player) contact.getFixtureB().getBody().getUserData();
             player.setCanJump(false);
         }

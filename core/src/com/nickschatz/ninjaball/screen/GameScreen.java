@@ -45,10 +45,7 @@ import com.badlogic.gdx.physics.box2d.joints.DistanceJointDef;
 import com.badlogic.gdx.physics.box2d.joints.RopeJointDef;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.scenes.scene2d.ui.Label;
-import com.badlogic.gdx.scenes.scene2d.ui.Skin;
-import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.utils.Logger;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
@@ -91,6 +88,9 @@ public class GameScreen implements Screen {
     private List<Joint> ropeJoints;
     private boolean hasRope = false;
     private Vector2 playerGrav;
+    private Slider sensitivitySlider;
+
+    private final float ROT_LIMIT = 180;
 
     public GameScreen(NinjaBallGame game) {
         this.game = game;
@@ -126,6 +126,20 @@ public class GameScreen implements Screen {
         skin = new Skin(Gdx.files.internal("data/uiskin.json"));
         skin.addRegions(atlas);
 
+        sensitivitySlider = new Slider(0.5f, 2f, 0.1f, false, skin);
+        sensitivitySlider.setValue(Gdx.app.getPreferences("Options").getFloat("rotSensitivity", 1f));
+        sensitivitySlider.addListener(new ChangeListener() {
+
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                Slider slider = (Slider) actor;
+                Gdx.app.getPreferences("Options").putFloat("rotSensitivity", slider.getValue());
+                Gdx.app.getPreferences("Options").flush();
+            }
+        });
+
+        table.add(new Label("Sensitivity: ", skin));
+        table.add(sensitivitySlider).row();
         TextButton returnButton = new TextButton("Return", skin);
         returnButton.addListener(new ChangeListener() {
             public void changed(ChangeEvent event, Actor actor) {
@@ -154,24 +168,9 @@ public class GameScreen implements Screen {
         game.batch.setProjectionMatrix(camera.combined);
 
         if (!isPaused) {
-            if (Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)) {
-                if (Gdx.input.isKeyPressed(Input.Keys.A)) {
-                    camera.position.x -= 1;
-                }
-                if (Gdx.input.isKeyPressed(Input.Keys.W)) {
-                    camera.position.y += 1;
-                }
-                if (Gdx.input.isKeyPressed(Input.Keys.D)) {
-                    camera.position.x += 1;
-                }
-                if (Gdx.input.isKeyPressed(Input.Keys.S)) {
-                    camera.position.y -= 1;
-                }
-            }
-            else {
-                camera.position.x = thePlayer.getPosition().x;
-                camera.position.y = thePlayer.getPosition().y;
-            }
+            rotationRate = sensitivitySlider.getValue();
+            camera.position.x = thePlayer.getPosition().x;
+            camera.position.y = thePlayer.getPosition().y;
             if (!game.useAccelerometer) {
                 rotation += (Gdx.input.isKeyPressed(Input.Keys.LEFT) ? -rotationRate : 0) +
                         (Gdx.input.isKeyPressed(Input.Keys.RIGHT) ? rotationRate : 0);
@@ -181,11 +180,11 @@ public class GameScreen implements Screen {
 
             }
 
-            if (rotation > 90) {
-                rotation = 90;
+            if (rotation > ROT_LIMIT) {
+                rotation = ROT_LIMIT;
             }
-            else if (rotation < -90) {
-                rotation = -90;
+            else if (rotation < -ROT_LIMIT) {
+                rotation = -ROT_LIMIT;
             }
             if (!game.useAccelerometer) {
                 camera.rotate(new Vector3(0, 0, 1),
@@ -241,7 +240,7 @@ public class GameScreen implements Screen {
                 botLeft.y = bodyB.getPosition().y;
             }
 
-            float width = 10f;
+            float width = 3f;
 
             game.batch.draw(ropeRegion,
                     botLeft.x, //X
@@ -318,7 +317,7 @@ public class GameScreen implements Screen {
                           }
                       },
                 thePlayer.getPosition(),
-                thePlayer.getPosition().cpy().add(playerGrav.cpy().rotate(180).nor().scl(1000)));
+                thePlayer.getPosition().cpy().add(playerGrav.cpy().rotate(180).nor().scl(300)));
         if (ropeAnchorPos.len() == 0) {
             return;
         }

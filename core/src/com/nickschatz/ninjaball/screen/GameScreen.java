@@ -73,7 +73,7 @@ public class GameScreen implements Screen {
     private OrthographicCamera camera;
     private NinjaBallGame game;
     private float rotation = 0.0f;
-    private float rotationRate = 0.5f;
+    private float rotationRate = 1f;
     private MapBodyManager mapBodyManager;
     private TiledMapRenderer mapRenderer;
 
@@ -211,22 +211,15 @@ public class GameScreen implements Screen {
         mapRenderer.renderTileLayer((TiledMapTileLayer) map.getLayers().get("background"));
         //debugRenderer.render(world, camera.combined);
 
-        int textureWidth = ball.getWidth();
-        int textureHeight = ball.getHeight();
 
-        TextureRegion ballRegion = new TextureRegion(ball, 0, 0, textureWidth, textureHeight);
-        game.batch.draw(ballRegion,
-                thePlayer.getPosition().x - thePlayer.getRadius(),
-                thePlayer.getPosition().y - thePlayer.getRadius(),
-                thePlayer.getRadius(),
-                thePlayer.getRadius(),
-                thePlayer.getRadius() * 2,
-                thePlayer.getRadius() * 2, 1, 1, (float) Math.toDegrees(thePlayer.getRotation()), false);
         TextureRegion ropeRegion = new TextureRegion(ropeTex, 0, 0, ropeTex.getWidth(), ropeTex.getHeight());
-        for (int i=0;i<ropeBodies.size()-1;i++) {
+        for (int i=0;i<ropeBodies.size();i++) {
 
             Body bodyA = ropeBodies.get(i);
-            Body bodyB = ropeBodies.get(i+1);
+            Body bodyB;
+            if (i == ropeBodies.size()-1) bodyB = thePlayer.getBody();
+            else bodyB = ropeBodies.get(i+1);
+
             float angle = bodyA.getPosition().sub(bodyB.getPosition()).cpy().nor().angle();
             Vector2 midpoint = new Vector2();
             midpoint.x = (bodyA.getPosition().x - bodyB.getPosition().x) / 2;
@@ -248,17 +241,32 @@ public class GameScreen implements Screen {
                 botLeft.y = bodyB.getPosition().y;
             }
 
+            float width = 10f;
+
             game.batch.draw(ropeRegion,
                     botLeft.x, //X
                     botLeft.y,
-                    midpoint.x, //OriginX
-                    midpoint.y, //OriginY
-                    10f, //Width
+                    width / 2, //OriginX
+                    dst / 2, //OriginY
+                    width, //Width
                     dst, //Height
                     1,1, //Scale
                     angle+90  //Rotation
             );
         }
+
+        int textureWidth = ball.getWidth();
+        int textureHeight = ball.getHeight();
+
+        TextureRegion ballRegion = new TextureRegion(ball, 0, 0, textureWidth, textureHeight);
+        game.batch.draw(ballRegion,
+                thePlayer.getPosition().x - thePlayer.getRadius(),
+                thePlayer.getPosition().y - thePlayer.getRadius(),
+                thePlayer.getRadius(),
+                thePlayer.getRadius(),
+                thePlayer.getRadius() * 2,
+                thePlayer.getRadius() * 2, 1, 1, (float) Math.toDegrees(thePlayer.getRotation()), false);
+
         mapRenderer.renderTileLayer((TiledMapTileLayer) map.getLayers().get("foreground"));
         game.batch.end();
 
@@ -329,7 +337,7 @@ public class GameScreen implements Screen {
         float friction = 0.5f;
         // Distance joint
         float dampingRatio = 0.0f;
-        float frequencyHz = 0;
+        float frequencyHz = 10;
         // Rope joint
         float kMaxWidth = 1.1f;
         // Bodies

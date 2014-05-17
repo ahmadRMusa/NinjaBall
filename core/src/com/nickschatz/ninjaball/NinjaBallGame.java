@@ -55,7 +55,7 @@ public class NinjaBallGame extends Game {
 		batch = new SpriteBatch();
 
         Resources.get().setLoader(TiledMap.class, new TmxMapLoader(new InternalFileHandleResolver()));
-        Resources.get().load("data/test2.tmx", TiledMap.class);
+        Resources.get().load("data/castle.tmx", TiledMap.class);
         Resources.get().load("data/ball64x64.png", Texture.class);
         Resources.get().load("data/rope.png", Texture.class);
         Resources.get().load("data/uiskin.atlas", TextureAtlas.class);

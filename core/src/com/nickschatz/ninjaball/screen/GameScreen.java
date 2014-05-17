@@ -40,9 +40,9 @@ import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.physics.box2d.*;
-import com.badlogic.gdx.physics.box2d.joints.DistanceJointDef;
-import com.badlogic.gdx.physics.box2d.joints.RopeJointDef;
+import com.badlogic.gdx.physics.box2d.Body;
+import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
+import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
@@ -58,7 +58,6 @@ import com.nickschatz.ninjaball.util.PlayerContactListener;
 import com.nickschatz.ninjaball.util.TiledLightManager;
 import com.nickschatz.ninjaball.util.Util;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class GameScreen implements Screen {
@@ -84,8 +83,7 @@ public class GameScreen implements Screen {
     private Label debugLabel;
     private Table table;
     private Skin skin;
-    private List<Body> ropeBodies;
-    private List<Joint> ropeJoints;
+
     private boolean hasRope = false;
     private Vector2 playerGrav;
     private Slider sensitivitySlider;
@@ -103,28 +101,29 @@ public class GameScreen implements Screen {
         world.setContactListener(new PlayerContactListener());
         thePlayer = new Player(world, 100, 300, 6f);
 
-        mapBodyManager = new MapBodyManager(world, 1.0f, Gdx.files.internal("data/materials.json"), Application.LOG_DEBUG);
+        mapBodyManager = new MapBodyManager(world, 2, Gdx.files.internal("data/materials.json"), Application.LOG_DEBUG);
 
-        map = Resources.get().get("data/test2.tmx", TiledMap.class);
-        mapRenderer = new OrthogonalTiledMapRenderer(map, 1, game.batch);
+        map = Resources.get().get("data/castle.tmx", TiledMap.class);
+        mapRenderer = new OrthogonalTiledMapRenderer(map, 0.5f, game.batch);
         mapBodyManager.createPhysics(map, "physics");
 
         ball = Resources.get().get("data/ball64x64.png", Texture.class);
         ropeTex = Resources.get().get("data/rope.png", Texture.class);
 
         stage = new Stage(new ScreenViewport(), game.batch);
-        Label.LabelStyle style = new Label.LabelStyle();
-        style.font = game.defaultFont;
-        debugLabel = new Label("Debug!", style);
+
+        TextureAtlas atlas = Resources.get().get("data/uiskin.atlas", TextureAtlas.class);
+        skin = new Skin(Gdx.files.internal("data/uiskin.json"));
+        skin.addRegions(atlas);
+
+        debugLabel = new Label("Debug!", skin);
         stage.addActor(debugLabel);
         table = new Table();
         table.setFillParent(true);
         stage.addActor(table);
 
 
-        TextureAtlas atlas = Resources.get().get("data/uiskin.atlas", TextureAtlas.class);
-        skin = new Skin(Gdx.files.internal("data/uiskin.json"));
-        skin.addRegions(atlas);
+
 
         sensitivitySlider = new Slider(0.5f, 2f, 0.1f, false, skin);
         sensitivitySlider.setValue(Gdx.app.getPreferences("Options").getFloat("rotSensitivity", 1f));
@@ -156,8 +155,7 @@ public class GameScreen implements Screen {
         Gdx.input.setInputProcessor(new GameInput(this, stage));
         Gdx.input.setCatchBackKey(true);
 
-        ropeJoints = new ArrayList<Joint>();
-        ropeBodies = new ArrayList<Body>();
+
     }
 
     @Override
@@ -210,6 +208,7 @@ public class GameScreen implements Screen {
         mapRenderer.renderTileLayer((TiledMapTileLayer) map.getLayers().get("background"));
         //debugRenderer.render(world, camera.combined);
 
+        List<Body> ropeBodies = thePlayer.getRopeBodies();
 
         TextureRegion ropeRegion = new TextureRegion(ropeTex, 0, 0, ropeTex.getWidth(), ropeTex.getHeight());
         for (int i=0;i<ropeBodies.size();i++) {
@@ -287,126 +286,8 @@ public class GameScreen implements Screen {
 
     }
 
-    private void doJump(Vector2 playerGrav) {
-        thePlayer.getBody().applyLinearImpulse(playerGrav.cpy().rotate(180).scl(2), thePlayer.getBody().getWorldCenter(), true);
-    }
-    private void doRope(Vector2 playerGrav) {
-        if (hasRope) {
-            hasRope = !hasRope;
 
-            for (Joint j : ropeJoints) {
-                world.destroyJoint(j);
-            }
-            ropeJoints.clear();
-            for (Body b : ropeBodies) {
-                world.destroyBody(b);
-            }
-            ropeBodies.clear();
-            return;
-        }
 
-        final Vector2 ropeAnchorPos = new Vector2(0,0);
-
-        world.rayCast(new RayCastCallback() {
-                          @Override
-                          public float reportRayFixture(Fixture fixture, Vector2 point, Vector2 normal, float fraction) {
-
-                              ropeAnchorPos.set(point);
-
-                              return 1;
-                          }
-                      },
-                thePlayer.getPosition(),
-                thePlayer.getPosition().cpy().add(playerGrav.cpy().rotate(180).nor().scl(300)));
-        if (ropeAnchorPos.len() == 0) {
-            return;
-        }
-
-        hasRope = !hasRope;
-        ropeBodies = new ArrayList<Body>();
-        ropeJoints = new ArrayList<Joint>();
-
-        int distFactor = 6;
-
-        Vector2 lastPos = ropeAnchorPos; //set position first body
-        float radBody = 3f;
-        // Body params
-        float density = 0.05f;
-        float restitution = 0.5f;
-        float friction = 0.5f;
-        // Distance joint
-        float dampingRatio = 0.0f;
-        float frequencyHz = 10;
-        // Rope joint
-        float kMaxWidth = 1.1f;
-        // Bodies
-        int countBodyInChain = (int) (thePlayer.getPosition().dst(ropeAnchorPos) / distFactor);
-        Body prevBody = null;
-
-        //========Create bodies and joints
-        for (int k = 0; k < countBodyInChain; k++) {
-            BodyDef bodyDef = new BodyDef();
-            if(k==0 ) bodyDef.type = BodyDef.BodyType.StaticBody; //first body is static
-            else bodyDef.type = BodyDef.BodyType.DynamicBody;
-            bodyDef.position.set(lastPos);
-            lastPos = lastPos.add(playerGrav.cpy().nor().scl(distFactor)); //modify b2Vect for next body
-            bodyDef.fixedRotation = true;
-            Body body = world.createBody(bodyDef);
-
-            CircleShape distBodyBox = new CircleShape();
-            distBodyBox.setRadius(radBody);
-            FixtureDef fixDef = new FixtureDef();
-            fixDef.density = density;
-            fixDef.restitution = restitution;
-            fixDef.friction = friction;
-            fixDef.shape = distBodyBox;
-            body.createFixture(fixDef);
-            //body.setHealth(9999999);
-            body.setLinearDamping(0.0005f);
-
-            if(k>0) {
-                //Create distance joint
-                DistanceJointDef distJDef = new DistanceJointDef();
-                Vector2 anchor1 = prevBody.getWorldCenter();
-                Vector2 anchor2 = body.getWorldCenter();
-                distJDef.initialize(prevBody, body, anchor1, anchor2);
-                distJDef.collideConnected = false;
-                distJDef.dampingRatio = dampingRatio;
-                distJDef.frequencyHz = frequencyHz;
-                ropeJoints.add(world.createJoint(distJDef));
-
-                //Create rope joint
-                RopeJointDef rDef = new RopeJointDef();
-                rDef.maxLength = (body.getPosition().sub(prevBody.getPosition())).len() * kMaxWidth;
-                rDef.localAnchorA.set(rDef.localAnchorB.set(0,0));
-                rDef.bodyA = prevBody;
-                rDef.bodyB = body;
-                ropeJoints.add(world.createJoint(rDef));
-
-            } //if k>0
-            prevBody = body;
-
-            ropeBodies.add(body);
-        } //for
-        if (prevBody != null) {
-            DistanceJointDef distJDef = new DistanceJointDef();
-            Vector2 anchor1 = prevBody.getWorldCenter();
-            Vector2 anchor2 = thePlayer.getBody().getWorldCenter();
-            distJDef.initialize(prevBody, thePlayer.getBody(), anchor1, anchor2);
-            distJDef.collideConnected = false;
-            distJDef.dampingRatio = dampingRatio;
-            distJDef.frequencyHz = frequencyHz;
-            world.createJoint(distJDef);
-
-            //Create rope joint
-            RopeJointDef rDef = new RopeJointDef();
-            rDef.maxLength = (thePlayer.getPosition().sub(prevBody.getPosition())).len() * kMaxWidth;
-            rDef.localAnchorA.set(rDef.localAnchorB.set(0, 0));
-            rDef.bodyA = prevBody;
-            rDef.bodyB = thePlayer.getBody();
-            world.createJoint(rDef);
-        }
-    }
 
     @Override
     public void resize(int width, int height) {
@@ -437,6 +318,7 @@ public class GameScreen implements Screen {
     public void dispose() {
         mapBodyManager.destroyPhysics();
         lightManager.dispose();
+        world.dispose();
     }
 
     public void togglePause() {
@@ -448,11 +330,10 @@ public class GameScreen implements Screen {
     }
 
     public void rope() {
-        doRope(playerGrav);
+        thePlayer.throwRope(playerGrav, world);
     }
 
     public void jump() {
-        if (thePlayer.canJump())
-            doJump(playerGrav);
+        thePlayer.jump(playerGrav);
     }
 }

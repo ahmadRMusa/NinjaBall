@@ -43,6 +43,9 @@ public class TiledLightManager {
         log = new Logger("TiledLightManager", logLevel);
 
         MapLayer layer = tiledMap.getLayers().get(layerName);
+        if (layer == null) {
+            return;
+        }
 
         for (MapObject object : layer.getObjects()) {
             if (!(object instanceof RectangleMapObject)) continue;

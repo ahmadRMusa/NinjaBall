@@ -27,6 +27,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.physics.box2d.joints.DistanceJointDef;
 import com.badlogic.gdx.physics.box2d.joints.RopeJointDef;
+import com.nickschatz.ninjaball.util.UserData;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -63,12 +64,20 @@ public class Player {
         fixtureDef.restitution = 0.6f; // Make it bounce a little bit
 
 // Create our fixture and attach it to the body
-        Fixture fixture = myBody.createFixture(fixtureDef);
+        myBody.createFixture(fixtureDef);
         myBody.setGravityScale(0);
 
 // Remember to dispose of any shapes after you're done with them!
 // BodyDef and FixtureDef don't need disposing, but shapes do.
         circle.dispose();
+
+        circle = new CircleShape();
+        circle.setRadius(radius + 4);
+        fixtureDef = new FixtureDef();
+        fixtureDef.shape = circle;
+        fixtureDef.isSensor = true;
+        myBody.createFixture(fixtureDef).setUserData(UserData.PLAYER_SENSOR);
+
 
         myBody.setUserData(this);
 

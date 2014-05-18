@@ -123,19 +123,15 @@ public class MapBodyManager {
             if (object instanceof RectangleMapObject) {
                 RectangleMapObject rectangle = (RectangleMapObject)object;
                 shape = getRectangle(rectangle);
-                logger.info("found Rectangle");
             }
             else if (object instanceof PolygonMapObject) {
                 shape = getPolygon((PolygonMapObject)object);
-                logger.info("found Polygon");
             }
             else if (object instanceof PolylineMapObject) {
                 shape = getPolyline((PolylineMapObject)object);
-                logger.info("found Polyline");
             }
             else if (object instanceof CircleMapObject) {
                 shape = getCircle((CircleMapObject)object);
-                logger.info("found Circle");
             }
             else {
                 logger.error("non suported shape " + object);
@@ -157,6 +153,7 @@ public class MapBodyManager {
             Body body = world.createBody(bodyDef);
             body.createFixture(fixtureDef);
 
+            body.setUserData(UserData.MAP_PART);
             bodies.add(body);
 
             fixtureDef.shape = null;

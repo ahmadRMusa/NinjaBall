@@ -98,8 +98,8 @@ public class GameScreen implements Screen {
         world = new World(new Vector2(0, -10), true);
         debugRenderer = new Box2DDebugRenderer();
 
-        world.setContactListener(new PlayerContactListener());
         thePlayer = new Player(world, 100, 300, 6f);
+        world.setContactListener(new PlayerContactListener(thePlayer));
 
         mapBodyManager = new MapBodyManager(world, 2, Gdx.files.internal("data/materials.json"), Application.LOG_DEBUG);
 

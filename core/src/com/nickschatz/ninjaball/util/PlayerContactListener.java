@@ -25,33 +25,46 @@ package com.nickschatz.ninjaball.util;
 
 import com.badlogic.gdx.physics.box2d.Contact;
 import com.badlogic.gdx.physics.box2d.ContactImpulse;
+import com.badlogic.gdx.physics.box2d.ContactListener;
 import com.badlogic.gdx.physics.box2d.Manifold;
 import com.nickschatz.ninjaball.entity.Player;
 
-public class PlayerContactListener implements com.badlogic.gdx.physics.box2d.ContactListener {
+public class PlayerContactListener implements ContactListener {
+    private Player player;
+    private int numContacts = 0;
+
+    public PlayerContactListener(Player player) {
+        this.player = player;
+    }
 
     @Override
     public void beginContact(Contact contact) {
-        if (contact.getFixtureA() != null && contact.getFixtureA().getBody() != null && contact.getFixtureA().getBody().getUserData() instanceof Player) {
-            Player player = (Player) contact.getFixtureA().getBody().getUserData();
-            player.setCanJump(true);
+        if (contact.getFixtureA() != null
+                && contact.getFixtureA().getUserData() instanceof Integer
+                && contact.getFixtureA().getUserData() == UserData.PLAYER_SENSOR) {
+            numContacts++;
         }
-        else if (contact.getFixtureB() != null && contact.getFixtureB().getBody() != null && contact.getFixtureB().getBody().getUserData() instanceof Player) {
-            Player player = (Player) contact.getFixtureB().getBody().getUserData();
-            player.setCanJump(true);
+        if (contact.getFixtureB() != null
+                && contact.getFixtureB().getUserData() instanceof Integer
+                && contact.getFixtureB().getUserData() == UserData.PLAYER_SENSOR) {
+            numContacts++;
         }
+        player.setCanJump(numContacts > 0);
     }
 
     @Override
     public void endContact(Contact contact) {
-        if (contact.getFixtureA() != null && contact.getFixtureA().getBody() != null && contact.getFixtureA().getBody().getUserData() instanceof Player) {
-            Player player = (Player) contact.getFixtureA().getBody().getUserData();
-            player.setCanJump(false);
+        if (contact.getFixtureA() != null
+                && contact.getFixtureA().getUserData() instanceof Integer
+                && contact.getFixtureA().getUserData() == UserData.PLAYER_SENSOR) {
+            numContacts--;
         }
-        else if (contact.getFixtureB() != null && contact.getFixtureB().getBody() != null && contact.getFixtureB().getBody().getUserData() instanceof Player) {
-            Player player = (Player) contact.getFixtureB().getBody().getUserData();
-            player.setCanJump(false);
+        if (contact.getFixtureB() != null
+                && contact.getFixtureB().getUserData() instanceof Integer
+                && contact.getFixtureB().getUserData() == UserData.PLAYER_SENSOR) {
+            numContacts--;
         }
+        player.setCanJump(numContacts > 0);
     }
 
     @Override

@@ -65,21 +65,20 @@ public class GameInput implements InputProcessor {
 
     @Override
     public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-        if (Gdx.app.getType() == Application.ApplicationType.Android) {
-            if (Gdx.input.isTouched()) {
-                if (Gdx.input.getX() > Gdx.graphics.getWidth() / 2) {
-                    gameScreen.jump();
-                }
-                else if (Gdx.input.getX() <= Gdx.graphics.getWidth() / 2) {
-                    gameScreen.rope();
-                }
-            }
-        }
+
         return gameScreen.isPaused() && stage.touchDown(screenX, screenY, pointer, button);
     }
 
     @Override
     public boolean touchUp(int screenX, int screenY, int pointer, int button) {
+        if (Gdx.app.getType() == Application.ApplicationType.Android) {
+            if (Gdx.input.getX() > Gdx.graphics.getWidth() / 2) {
+                gameScreen.jump();
+            }
+            else if (Gdx.input.getX() <= Gdx.graphics.getWidth() / 2) {
+                gameScreen.rope();
+            }
+        }
         return gameScreen.isPaused() && stage.touchUp(screenX, screenY, pointer, button);
     }
 

@@ -34,15 +34,14 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapRenderer;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.physics.box2d.Body;
-import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
-import com.badlogic.gdx.physics.box2d.World;
+import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
@@ -72,6 +71,7 @@ public class GameScreen implements Screen {
     private float rotationRate = 1f;
     private MapBodyManager mapBodyManager;
     private TiledMapRenderer mapRenderer;
+    private ShapeRenderer shapeRenderer;
 
     private Texture ball;
     private TiledMap map;
@@ -90,6 +90,10 @@ public class GameScreen implements Screen {
 
     private final float ROT_LIMIT = 180;
 
+    private float camBBsize;
+
+    private float mapScale = 0.5f;
+
     public GameScreen(NinjaBallGame game) {
         this.game = game;
         camera = new OrthographicCamera();
@@ -101,10 +105,10 @@ public class GameScreen implements Screen {
         thePlayer = new Player(world, 100, 300, 6f);
         world.setContactListener(new PlayerContactListener(thePlayer));
 
-        mapBodyManager = new MapBodyManager(world, 2, Gdx.files.internal("data/materials.json"), Application.LOG_DEBUG);
+        mapBodyManager = new MapBodyManager(world, 1/mapScale, Gdx.files.internal("data/materials.json"), Application.LOG_DEBUG);
 
-        map = Resources.get().get("data/castle.tmx", TiledMap.class);
-        mapRenderer = new OrthogonalTiledMapRenderer(map, 0.5f, game.batch);
+        map = Resources.get().get("data/level1.tmx", TiledMap.class);
+        mapRenderer = new OrthogonalTiledMapRenderer(map, mapScale, game.batch);
         mapBodyManager.createPhysics(map, "physics");
 
         ball = Resources.get().get("data/ball64x64.png", Texture.class);
@@ -122,7 +126,7 @@ public class GameScreen implements Screen {
         table.setFillParent(true);
         stage.addActor(table);
 
-
+        shapeRenderer = new ShapeRenderer();
 
 
         sensitivitySlider = new Slider(0.5f, 2f, 0.1f, false, skin);
@@ -155,7 +159,7 @@ public class GameScreen implements Screen {
         Gdx.input.setInputProcessor(new GameInput(this, stage));
         Gdx.input.setCatchBackKey(true);
 
-
+        camBBsize = (float) Math.sqrt((camera.viewportWidth*camera.viewportWidth)+(camera.viewportHeight*camera.viewportHeight));
     }
 
     @Override
@@ -169,6 +173,24 @@ public class GameScreen implements Screen {
             rotationRate = sensitivitySlider.getValue();
             camera.position.x = thePlayer.getPosition().x;
             camera.position.y = thePlayer.getPosition().y;
+
+            /*float minCamX = Float.parseFloat(map.getProperties().get("minCamX", String.class)) * mapScale * 70;
+            float minCamY = Float.parseFloat(map.getProperties().get("minCamY", String.class)) * mapScale * 70;
+            float maxCamX = Float.parseFloat(map.getProperties().get("maxCamX", String.class)) * mapScale * 70;
+            float maxCamY = Float.parseFloat(map.getProperties().get("maxCamY", String.class)) * mapScale * 70;
+            if (camera.position.x < minCamX) {
+                camera.position.x = minCamX;
+            }
+            if (camera.position.y > minCamY) {
+                camera.position.y = minCamY;
+            }
+            if (camera.position.x > maxCamX) {
+                camera.position.x = maxCamX;
+            }
+            if (camera.position.y < maxCamY) {
+                camera.position.y = maxCamY;
+            }*/
+
             if (!game.useAccelerometer) {
                 rotation += (Gdx.input.isKeyPressed(Input.Keys.LEFT) ? -rotationRate : 0) +
                         (Gdx.input.isKeyPressed(Input.Keys.RIGHT) ? rotationRate : 0);
@@ -192,7 +214,37 @@ public class GameScreen implements Screen {
 
             playerGrav = world.getGravity().cpy().rotate(rotation).scl(thePlayer.getBody().getMass());
 
+            shapeRenderer.setProjectionMatrix(camera.combined);
+            if (Gdx.input.isTouched() && Gdx.input.getX() <= Gdx.graphics.getWidth() / 2) {
+                final Vector2 ropeAnchorPos = new Vector2(0,0);
 
+                world.rayCast(new RayCastCallback() {
+                                  @Override
+                                  public float reportRayFixture(Fixture fixture, Vector2 point, Vector2 normal, float fraction) {
+
+                                      ropeAnchorPos.set(point);
+
+                                      return fraction;
+                                  }
+                              },
+                        thePlayer.getPosition(),
+                        thePlayer.getPosition().cpy().add(playerGrav.cpy().rotate(180).nor().scl(300)));
+                boolean hit = true;
+                if (ropeAnchorPos.len() == 0) {
+                    ropeAnchorPos.set(thePlayer.getPosition().cpy().add(playerGrav.cpy().rotate(180).nor().scl(300)));
+                    hit = false;
+                }
+
+                shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+                if (hit) {
+                    shapeRenderer.setColor(0, 1, 0, 1);
+                }
+                else {
+                    shapeRenderer.setColor(1, 0, 0, 1);
+                }
+                shapeRenderer.line(thePlayer.getPosition().x, thePlayer.getPosition().y, ropeAnchorPos.x, ropeAnchorPos.y);
+                shapeRenderer.end();
+            }
 
             //Apply fake gravity
             thePlayer.getBody().applyForce(
@@ -203,7 +255,7 @@ public class GameScreen implements Screen {
 
         }
 
-        mapRenderer.setView(camera.combined, 0, 0, 1000, 1000); //Dirty Fix. I should do something about it.
+        mapRenderer.setView(camera.combined,camera.position.x - camBBsize / 2, camera.position.y - camBBsize / 2, camBBsize, camBBsize); //Dirty Fix. I should do something about it.
         game.batch.begin();
         mapRenderer.renderTileLayer((TiledMapTileLayer) map.getLayers().get("background"));
         //debugRenderer.render(world, camera.combined);

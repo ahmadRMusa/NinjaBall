@@ -59,9 +59,9 @@ public class Player {
 // Create a fixture definition to apply our shape to
         FixtureDef fixtureDef = new FixtureDef();
         fixtureDef.shape = circle;
-        fixtureDef.density = 1f;
+        fixtureDef.density = 3f;
         fixtureDef.friction = 0.4f;
-        fixtureDef.restitution = 0.6f; // Make it bounce a little bit
+        fixtureDef.restitution = 0.2f; // Make it bounce a little bit
 
 // Create our fixture and attach it to the body
         myBody.createFixture(fixtureDef);
@@ -157,7 +157,7 @@ public class Player {
         float restitution = 0.5f;
         float friction = 0.5f;
         // Distance joint
-        float dampingRatio = 0.0f;
+        float dampingRatio = 0.3f;
         float frequencyHz = 10;
         // Rope joint
         float kMaxWidth = 1.1f;

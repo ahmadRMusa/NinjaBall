@@ -31,9 +31,6 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.utils.*;
-import com.badlogic.gdx.utils.JsonValue.JsonIterator;
-
-import java.util.Iterator;
 
 /**
  * @author David Saltares Márquez david.saltares at gmail.com
@@ -107,12 +104,9 @@ public class MapBodyManager {
         }
 
         MapObjects objects = layer.getObjects();
-        Iterator<MapObject> objectIt = objects.iterator();
 
-        while(objectIt.hasNext()) {
-            MapObject object = objectIt.next();
-
-            if (object instanceof TextureMapObject){
+        for (MapObject object : objects) {
+            if (object instanceof TextureMapObject) {
                 continue;
             }
 
@@ -121,20 +115,20 @@ public class MapBodyManager {
             bodyDef.type = BodyDef.BodyType.StaticBody;
 
             if (object instanceof RectangleMapObject) {
-                RectangleMapObject rectangle = (RectangleMapObject)object;
+                RectangleMapObject rectangle = (RectangleMapObject) object;
                 shape = getRectangle(rectangle);
             }
             else if (object instanceof PolygonMapObject) {
-                shape = getPolygon((PolygonMapObject)object);
+                shape = getPolygon((PolygonMapObject) object);
             }
             else if (object instanceof PolylineMapObject) {
-                shape = getPolyline((PolylineMapObject)object);
+                shape = getPolyline((PolylineMapObject) object);
             }
             else if (object instanceof CircleMapObject) {
-                shape = getCircle((CircleMapObject)object);
+                shape = getCircle((CircleMapObject) object);
             }
             else {
-                logger.error("non suported shape " + object);
+                logger.error("unsupported shape " + object);
                 continue;
             }
 
@@ -147,13 +141,25 @@ public class MapBodyManager {
                 fixtureDef = materials.get("default");
             }
 
+
+
+
             fixtureDef.shape = shape;
             //fixtureDef.filter.categoryBits = Env.game.getCategoryBitsManager().getCategoryBits("level");
 
             Body body = world.createBody(bodyDef);
-            body.createFixture(fixtureDef);
+            Fixture fixture = body.createFixture(fixtureDef);
 
-            body.setUserData(UserData.MAP_PART);
+            String objType = object.getProperties().get("type", "none", String.class);
+            if (objType.equals("exit")) {
+                System.out.println("Found exit");
+                fixture.setSensor(true);
+                fixture.setUserData(UserData.EXIT);
+            }
+            else {
+                fixture.setUserData(UserData.MAP_PART);
+            }
+
             bodies.add(body);
 
             fixtureDef.shape = null;
@@ -186,11 +192,8 @@ public class MapBodyManager {
         try {
             JsonReader reader = new JsonReader();
             JsonValue root = reader.parse(materialsFile);
-            JsonIterator materialIt = root.iterator();
 
-            while (materialIt.hasNext()) {
-                JsonValue materialValue = materialIt.next();
-
+            for (JsonValue materialValue : root) {
                 if (!materialValue.has("name")) {
                     logger.error("material without name");
                     continue;

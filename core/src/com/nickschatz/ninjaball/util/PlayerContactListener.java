@@ -28,13 +28,16 @@ import com.badlogic.gdx.physics.box2d.ContactImpulse;
 import com.badlogic.gdx.physics.box2d.ContactListener;
 import com.badlogic.gdx.physics.box2d.Manifold;
 import com.nickschatz.ninjaball.entity.Player;
+import com.nickschatz.ninjaball.screen.GameScreen;
 
 public class PlayerContactListener implements ContactListener {
     private Player player;
+    private GameScreen gameScreen;
     private int numContacts = 0;
 
-    public PlayerContactListener(Player player) {
+    public PlayerContactListener(Player player, GameScreen gameScreen) {
         this.player = player;
+        this.gameScreen = gameScreen;
     }
 
     @Override
@@ -50,6 +53,26 @@ public class PlayerContactListener implements ContactListener {
             numContacts++;
         }
         player.setCanJump(numContacts > 0);
+
+        if ((contact.getFixtureA() != null
+                && contact.getFixtureA().getUserData() instanceof Integer
+                && contact.getFixtureA().getUserData() == UserData.PLAYER_SENSOR
+
+                && contact.getFixtureB() != null
+                && contact.getFixtureB().getUserData() instanceof Integer
+                && contact.getFixtureB().getUserData() == UserData.EXIT) ||
+
+                (
+                        contact.getFixtureB() != null
+                        && contact.getFixtureB().getUserData() instanceof Integer
+                        && contact.getFixtureB().getUserData() == UserData.PLAYER_SENSOR
+
+                        && contact.getFixtureA() != null
+                        && contact.getFixtureA().getUserData() instanceof Integer
+                        && contact.getFixtureA().getUserData() == UserData.EXIT)) {
+            gameScreen.nextLevel();
+        }
+
     }
 
     @Override
@@ -66,6 +89,7 @@ public class PlayerContactListener implements ContactListener {
         }
         player.setCanJump(numContacts > 0);
     }
+
 
     @Override
     public void preSolve(Contact contact, Manifold oldManifold) {

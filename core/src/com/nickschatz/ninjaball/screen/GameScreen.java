@@ -94,8 +94,9 @@ public class GameScreen implements Screen {
 
     private float mapScale = 0.5f;
 
-    public GameScreen(NinjaBallGame game) {
+    public GameScreen(NinjaBallGame game, TiledMap map) {
         this.game = game;
+        this.map = map;
         camera = new OrthographicCamera();
         camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
@@ -103,11 +104,10 @@ public class GameScreen implements Screen {
         debugRenderer = new Box2DDebugRenderer();
 
         thePlayer = new Player(world, 100, 300, 6f);
-        world.setContactListener(new PlayerContactListener(thePlayer));
+        world.setContactListener(new PlayerContactListener(thePlayer, this));
 
         mapBodyManager = new MapBodyManager(world, 1/mapScale, Gdx.files.internal("data/materials.json"), Application.LOG_DEBUG);
 
-        map = Resources.get().get("data/level1.tmx", TiledMap.class);
         mapRenderer = new OrthogonalTiledMapRenderer(map, mapScale, game.batch);
         mapBodyManager.createPhysics(map, "physics");
 
@@ -257,8 +257,11 @@ public class GameScreen implements Screen {
 
         mapRenderer.setView(camera.combined,camera.position.x - camBBsize / 2, camera.position.y - camBBsize / 2, camBBsize, camBBsize); //Dirty Fix. I should do something about it.
         game.batch.begin();
-        mapRenderer.renderTileLayer((TiledMapTileLayer) map.getLayers().get("background"));
-        //debugRenderer.render(world, camera.combined);
+        mapRenderer.renderTileLayer(
+                (TiledMapTileLayer) map.
+                        getLayers().
+                        get("background"));
+        debugRenderer.render(world, camera.combined);
 
         List<Body> ropeBodies = thePlayer.getRopeBodies();
 
@@ -368,9 +371,9 @@ public class GameScreen implements Screen {
 
     @Override
     public void dispose() {
-        mapBodyManager.destroyPhysics();
-        lightManager.dispose();
-        world.dispose();
+        //mapBodyManager.destroyPhysics();
+        //lightManager.dispose();
+        //world.dispose();
     }
 
     public void togglePause() {
@@ -387,5 +390,10 @@ public class GameScreen implements Screen {
 
     public void jump() {
         thePlayer.jump(playerGrav);
+    }
+
+    public void nextLevel() {
+        game.setScreen(new MenuScreen(game));
+        dispose();
     }
 }

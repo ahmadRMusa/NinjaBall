@@ -5,7 +5,7 @@
  </tileset>
  <layer name="background" width="128" height="128">
   <data encoding="base64" compression="zlib">
-   eJztwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGoADwAB
+   eJztzjENADAMBLEsJVEQ4Q8vz6BT1MWWbr8qAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIC3Tjed3yMArBnHigBO
   </data>
  </layer>
  <layer name="foreground" width="128" height="128">
@@ -39,8 +39,11 @@
   <object x="3988" y="8118">
    <polyline points="0,0 0,-279 67,-346 142,-347 210,-279 211,3"/>
   </object>
+  <object name="exit" type="exit" x="4060" y="8328" width="58" height="72">
+   <properties>
+    <property name="type" value="exit"/>
+   </properties>
+  </object>
  </objectgroup>
- <objectgroup name="objects" width="128" height="128">
-  <object name="exit" x="4069" y="8329" width="58" height="72"/>
- </objectgroup>
+ <objectgroup name="objects" width="128" height="128"/>
 </map>

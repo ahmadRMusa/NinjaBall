@@ -23,7 +23,8 @@
 
 package com.nickschatz.ninjaball.util;
 
-public class UserData {
+public abstract class UserData {
     public static final Integer MAP_PART = 0;
     public static final Integer PLAYER_SENSOR = 1;
+    public static final Integer EXIT = 2;
 }

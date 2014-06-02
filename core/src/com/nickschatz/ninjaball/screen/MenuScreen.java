@@ -27,6 +27,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
@@ -63,7 +64,7 @@ public class MenuScreen implements Screen {
         TextButton startButton = new TextButton("Play", skin);
         startButton.addListener(new ChangeListener() {
             public void changed(ChangeEvent event, Actor actor) {
-                game.setScreen(new GameScreen(game));
+                game.setScreen(new GameScreen(game, Resources.get().get("data/level1.tmx", TiledMap.class)));
             }
         });
         table.add(startButton);

@@ -261,7 +261,7 @@ public class GameScreen implements Screen {
                 (TiledMapTileLayer) map.
                         getLayers().
                         get("background"));
-        debugRenderer.render(world, camera.combined);
+        //debugRenderer.render(world, camera.combined);
 
         List<Body> ropeBodies = thePlayer.getRopeBodies();
 
@@ -334,11 +334,6 @@ public class GameScreen implements Screen {
 
             stage.draw();
         }
-
-
-
-
-
     }
 
 

@@ -103,7 +103,7 @@ public class GameScreen implements Screen {
         world = new World(new Vector2(0, -10), true);
         debugRenderer = new Box2DDebugRenderer();
 
-        thePlayer = new Player(world, 100, 300, 6f);
+        thePlayer = new Player(world, 100, 300, 10f);
         world.setContactListener(new PlayerContactListener(thePlayer, this));
 
         mapBodyManager = new MapBodyManager(world, 1/mapScale, Gdx.files.internal("data/materials.json"), Application.LOG_DEBUG);
@@ -160,36 +160,33 @@ public class GameScreen implements Screen {
         Gdx.input.setCatchBackKey(true);
 
         camBBsize = (float) Math.sqrt((camera.viewportWidth*camera.viewportWidth)+(camera.viewportHeight*camera.viewportHeight));
+
+        game.batch.setBlendFunction(GL20.GL_BLEND_SRC_RGB, GL20.GL_BLEND_DST_RGB);
     }
 
     @Override
     public void render(float delta) {
-        Gdx.gl.glClearColor(0, 0, 0.0f, 1);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        Gdx.gl.glClearColor(135f/255f, 206f/255f, 235f/255f, 1);
+        //Gdx.gl.glClearColor(0, 1, 0, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
         camera.update();
         game.batch.setProjectionMatrix(camera.combined);
 
         if (!isPaused) {
             rotationRate = sensitivitySlider.getValue();
-            camera.position.x = thePlayer.getPosition().x;
-            camera.position.y = thePlayer.getPosition().y;
+            float lerp = 0.1f;
+            Vector3 position = camera.position;
+            position.x += (thePlayer.getPosition().x - position.x) * lerp;
+            position.y += (thePlayer.getPosition().y - position.y) * lerp;
 
-            /*float minCamX = Float.parseFloat(map.getProperties().get("minCamX", String.class)) * mapScale * 70;
-            float minCamY = Float.parseFloat(map.getProperties().get("minCamY", String.class)) * mapScale * 70;
-            float maxCamX = Float.parseFloat(map.getProperties().get("maxCamX", String.class)) * mapScale * 70;
-            float maxCamY = Float.parseFloat(map.getProperties().get("maxCamY", String.class)) * mapScale * 70;
+            float minCamX = 600;
+            float minCamY = 0;
             if (camera.position.x < minCamX) {
                 camera.position.x = minCamX;
             }
-            if (camera.position.y > minCamY) {
+            if (camera.position.y < minCamY) {
                 camera.position.y = minCamY;
             }
-            if (camera.position.x > maxCamX) {
-                camera.position.x = maxCamX;
-            }
-            if (camera.position.y < maxCamY) {
-                camera.position.y = maxCamY;
-            }*/
 
             if (!game.useAccelerometer) {
                 rotation += (Gdx.input.isKeyPressed(Input.Keys.LEFT) ? -rotationRate : 0) +
@@ -294,7 +291,7 @@ public class GameScreen implements Screen {
                 botLeft.y = bodyB.getPosition().y;
             }
 
-            float width = 3f;
+            float width = 6f;
 
             game.batch.draw(ropeRegion,
                     botLeft.x, //X

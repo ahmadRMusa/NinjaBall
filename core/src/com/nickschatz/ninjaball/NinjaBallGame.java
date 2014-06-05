@@ -26,14 +26,11 @@ package com.nickschatz.ninjaball;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.assets.loaders.resolvers.InternalFileHandleResolver;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
-import com.badlogic.gdx.maps.tiled.TiledMap;
-import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.utils.Logger;
 import com.nickschatz.ninjaball.screen.MenuScreen;
 
@@ -48,20 +45,20 @@ public class NinjaBallGame extends Game {
 	@Override
 	public void create () {
         Resources.init();
+        Levels.load();
         log = new Logger("NinjaBall", Logger.DEBUG);
 
         defaultFont = new BitmapFont();
 
 		batch = new SpriteBatch();
 
-        Resources.get().setLoader(TiledMap.class, new TmxMapLoader(new InternalFileHandleResolver()));
-        Resources.get().load("data/level1.tmx", TiledMap.class);
+        //Resources.get().load("data/level1.tmx", TiledMap.class);
         Resources.get().load("data/ball64x64.png", Texture.class);
         Resources.get().load("data/rope.png", Texture.class);
         Resources.get().load("data/uiskin.atlas", TextureAtlas.class);
 
         useAccelerometer = Gdx.input.isPeripheralAvailable(Input.Peripheral.Accelerometer);
-        log.info("Accelerometer IS " + (useAccelerometer ? "" : "NOT ") + "availiable");
+        log.info("Accelerometer IS " + (useAccelerometer ? "" : "NOT ") + "available");
 	}
 
 	@Override

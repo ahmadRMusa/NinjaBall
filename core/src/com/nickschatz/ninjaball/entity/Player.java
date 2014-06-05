@@ -148,17 +148,17 @@ public class Player {
         ropeBodies = new ArrayList<Body>();
         ropeJoints = new ArrayList<Joint>();
 
-        int distFactor = 6;
+        int distFactor = 6; //The resolution of the rope
 
         Vector2 lastPos = ropeAnchorPos; //set position first body
-        float radBody = 3f;
+        float radBody = 6f;
         // Body params
         float density = 0.05f;
         float restitution = 0.5f;
         float friction = 0.5f;
         // Distance joint
-        float dampingRatio = 0.3f;
-        float frequencyHz = 10;
+        float dampingRatio = 1f;
+        float frequencyHz = 15;
         // Rope joint
         float kMaxWidth = 1.1f;
         // Bodies

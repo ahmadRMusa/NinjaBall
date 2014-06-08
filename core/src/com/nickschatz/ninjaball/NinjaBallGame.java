@@ -26,6 +26,8 @@ package com.nickschatz.ninjaball;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.audio.Music;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -56,6 +58,13 @@ public class NinjaBallGame extends Game {
         Resources.get().load("data/ball64x64.png", Texture.class);
         Resources.get().load("data/rope.png", Texture.class);
         Resources.get().load("data/uiskin.atlas", TextureAtlas.class);
+
+        Resources.get().load("data/sound/rope.wav", Sound.class);
+        Resources.get().load("data/sound/jump.wav", Sound.class);
+
+        Resources.get().load("data/music/Call to Adventure.mp3", Music.class);
+        Resources.get().load("data/music/Hidden Agenda.mp3", Music.class);
+        Resources.get().load("data/music/Master of the Feast.mp3", Music.class);
 
         useAccelerometer = Gdx.input.isPeripheralAvailable(Input.Peripheral.Accelerometer);
         log.info("Accelerometer IS " + (useAccelerometer ? "" : "NOT ") + "available");

@@ -35,6 +35,7 @@ public class AndroidLauncher extends AndroidApplication {
 		AndroidApplicationConfiguration config = new AndroidApplicationConfiguration();
         config.useAccelerometer = true;
         config.useWakelock = true;
+        config.hideStatusBar = true;
 		initialize(new NinjaBallGame(), config);
 	}
 }

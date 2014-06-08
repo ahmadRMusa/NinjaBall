@@ -28,6 +28,7 @@ import com.badlogic.gdx.Application;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -94,9 +95,12 @@ public class GameScreen implements Screen {
 
     private float mapScale = 0.5f;
 
-    public GameScreen(NinjaBallGame game, TiledMap map) {
+    private Music curMusic;
+
+    public GameScreen(NinjaBallGame game, TiledMap map, Music curMusic) {
         this.game = game;
         this.map = map;
+        this.curMusic = curMusic;
         camera = new OrthographicCamera();
         camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
@@ -162,6 +166,9 @@ public class GameScreen implements Screen {
         camBBsize = (float) Math.sqrt((camera.viewportWidth*camera.viewportWidth)+(camera.viewportHeight*camera.viewportHeight));
 
         game.batch.setBlendFunction(GL20.GL_BLEND_SRC_RGB, GL20.GL_BLEND_DST_RGB);
+
+        curMusic.setLooping(true);
+        curMusic.play();
     }
 
     @Override
@@ -173,6 +180,7 @@ public class GameScreen implements Screen {
         game.batch.setProjectionMatrix(camera.combined);
 
         if (!isPaused) {
+
             rotationRate = sensitivitySlider.getValue();
             float lerp = 0.1f;
             Vector3 position = camera.position;
@@ -370,6 +378,10 @@ public class GameScreen implements Screen {
 
     public void togglePause() {
         isPaused = !isPaused;
+        if (isPaused)
+            curMusic.pause();
+        else
+            curMusic.play();
     }
 
     public boolean isPaused() {
@@ -386,6 +398,7 @@ public class GameScreen implements Screen {
 
     public void nextLevel() {
         game.setScreen(new MenuScreen(game));
+        curMusic.stop();
         dispose();
     }
 }

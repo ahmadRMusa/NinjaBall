@@ -23,10 +23,12 @@
 
 package com.nickschatz.ninjaball.entity;
 
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.physics.box2d.joints.DistanceJointDef;
 import com.badlogic.gdx.physics.box2d.joints.RopeJointDef;
+import com.nickschatz.ninjaball.Resources;
 import com.nickschatz.ninjaball.util.UserData;
 
 import java.util.ArrayList;
@@ -39,6 +41,9 @@ public class Player {
     private boolean hasRope = false;
     private List<Body> ropeBodies;
     private List<Joint> ropeJoints;
+
+    private Sound ropeSound;
+    private Sound jumpSound;
 
     public Player(World world, float x, float y, float radius) {
         this.radius = radius;
@@ -59,7 +64,7 @@ public class Player {
 // Create a fixture definition to apply our shape to
         FixtureDef fixtureDef = new FixtureDef();
         fixtureDef.shape = circle;
-        fixtureDef.density = 3f;
+        fixtureDef.density = 6f;
         fixtureDef.friction = 0.4f;
         fixtureDef.restitution = 0.2f; // Make it bounce a little bit
 
@@ -83,6 +88,9 @@ public class Player {
 
         ropeJoints = new ArrayList<Joint>();
         ropeBodies = new ArrayList<Body>();
+
+        ropeSound = Resources.get().get("data/sound/rope.wav", Sound.class);
+        jumpSound = Resources.get().get("data/sound/jump.wav", Sound.class);
     }
 
     public Body getBody() {
@@ -110,7 +118,10 @@ public class Player {
     }
 
     public void jump(Vector2 playerGrav) {
-        if (canJump()) myBody.applyLinearImpulse(playerGrav.cpy().rotate(180).scl(2), myBody.getWorldCenter(), true);
+        if (canJump()) {
+            myBody.applyLinearImpulse(playerGrav.cpy().rotate(180).scl(2), myBody.getWorldCenter(), true);
+            jumpSound.play();
+        }
     }
     public void throwRope(Vector2 playerGrav, World world) {
         if (hasRope) {
@@ -132,7 +143,6 @@ public class Player {
         world.rayCast(new RayCastCallback() {
                           @Override
                           public float reportRayFixture(Fixture fixture, Vector2 point, Vector2 normal, float fraction) {
-
                               ropeAnchorPos.set(point);
 
                               return fraction;
@@ -143,6 +153,8 @@ public class Player {
         if (ropeAnchorPos.len() == 0) {
             return;
         }
+
+        ropeSound.play();
 
         hasRope = !hasRope;
         ropeBodies = new ArrayList<Body>();

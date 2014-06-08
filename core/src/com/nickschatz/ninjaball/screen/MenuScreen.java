@@ -25,6 +25,7 @@ package com.nickschatz.ninjaball.screen;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.scenes.scene2d.Actor;
@@ -64,7 +65,7 @@ public class MenuScreen implements Screen {
         TextButton startButton = new TextButton("Play", skin);
         startButton.addListener(new ChangeListener() {
             public void changed(ChangeEvent event, Actor actor) {
-                game.setScreen(new GameScreen(game, Levels.level1));
+                game.setScreen(new GameScreen(game, Levels.level1, Resources.get().get("data/music/Master of the Feast.mp3", Music.class)));
             }
         });
         table.add(startButton);

@@ -57,6 +57,7 @@ public class NinjaBallGame extends Game {
         //Resources.get().load("data/level1.tmx", TiledMap.class);
         Resources.get().load("data/ball64x64.png", Texture.class);
         Resources.get().load("data/rope.png", Texture.class);
+        Resources.get().load("data/ropeKnot.png", Texture.class);
         Resources.get().load("data/uiskin.atlas", TextureAtlas.class);
 
         Resources.get().load("data/sound/rope.wav", Sound.class);

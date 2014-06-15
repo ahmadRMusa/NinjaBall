@@ -41,20 +41,23 @@ public class GameInput implements InputProcessor {
 
     @Override
     public boolean keyDown(int keycode) {
-        if (keycode == Input.Keys.BACK || keycode == Input.Keys.ESCAPE) {
-            gameScreen.togglePause();
-        }
-        if (keycode == Input.Keys.Z) {
-            gameScreen.rope();
-        }
-        if (keycode == Input.Keys.X) {
-            gameScreen.jump();
-        }
+
         return gameScreen.isPaused() && stage.keyDown(keycode);
     }
 
     @Override
     public boolean keyUp(int keycode) {
+        if (!gameScreen.isPaused()) {
+            if (keycode == Input.Keys.BACK || keycode == Input.Keys.ESCAPE) {
+                gameScreen.togglePause();
+            }
+            if (keycode == Input.Keys.X) {
+                gameScreen.rope();
+            }
+            if (keycode == Input.Keys.Z) {
+                gameScreen.jump();
+            }
+        }
         return gameScreen.isPaused() && stage.keyUp(keycode);
     }
 

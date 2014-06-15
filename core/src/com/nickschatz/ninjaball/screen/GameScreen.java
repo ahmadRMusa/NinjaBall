@@ -62,6 +62,7 @@ import java.util.List;
 
 public class GameScreen implements Screen {
 
+    private Texture ropeKnotTex;
     private Texture ropeTex;
     private TiledLightManager lightManager;
     private Box2DDebugRenderer debugRenderer;
@@ -89,7 +90,7 @@ public class GameScreen implements Screen {
     private Vector2 playerGrav;
     private Slider sensitivitySlider;
 
-    private final float ROT_LIMIT = 180;
+    private final float ROT_LIMIT = 90;
 
     private float camBBsize;
 
@@ -117,6 +118,8 @@ public class GameScreen implements Screen {
 
         ball = Resources.get().get("data/ball64x64.png", Texture.class);
         ropeTex = Resources.get().get("data/rope.png", Texture.class);
+        ropeKnotTex = Resources.get().get("data/ropeKnot.png", Texture.class);
+        ropeKnotTex.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
 
         stage = new Stage(new ScreenViewport(), game.batch);
 
@@ -175,9 +178,10 @@ public class GameScreen implements Screen {
     public void render(float delta) {
         Gdx.gl.glClearColor(135f/255f, 206f/255f, 235f/255f, 1);
         //Gdx.gl.glClearColor(0, 1, 0, 1);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         camera.update();
         game.batch.setProjectionMatrix(camera.combined);
+        game.batch.enableBlending();
 
         if (!isPaused) {
 
@@ -187,7 +191,7 @@ public class GameScreen implements Screen {
             position.x += (thePlayer.getPosition().x - position.x) * lerp;
             position.y += (thePlayer.getPosition().y - position.y) * lerp;
 
-            float minCamX = 600;
+            float minCamX = 600 * (Gdx.graphics.getWidth()/1280);
             float minCamY = 0;
             if (camera.position.x < minCamX) {
                 camera.position.x = minCamX;
@@ -220,7 +224,7 @@ public class GameScreen implements Screen {
             playerGrav = world.getGravity().cpy().rotate(rotation).scl(thePlayer.getBody().getMass());
 
             shapeRenderer.setProjectionMatrix(camera.combined);
-            if (Gdx.input.isTouched() && Gdx.input.getX() <= Gdx.graphics.getWidth() / 2) {
+            if ((Gdx.input.isTouched() && Gdx.input.getX() <= Gdx.graphics.getWidth() / 2) || Gdx.input.isKeyPressed(Input.Keys.X)) {
                 final Vector2 ropeAnchorPos = new Vector2(0,0);
 
                 world.rayCast(new RayCastCallback() {
@@ -271,6 +275,7 @@ public class GameScreen implements Screen {
         List<Body> ropeBodies = thePlayer.getRopeBodies();
 
         TextureRegion ropeRegion = new TextureRegion(ropeTex, 0, 0, ropeTex.getWidth(), ropeTex.getHeight());
+        TextureRegion ropeKnotRegion = new TextureRegion(ropeKnotTex, 0, 0, ropeKnotTex.getWidth(), ropeKnotTex.getHeight());
         for (int i=0;i<ropeBodies.size();i++) {
 
             Body bodyA = ropeBodies.get(i);
@@ -311,6 +316,26 @@ public class GameScreen implements Screen {
                     1,1, //Scale
                     angle+90  //Rotation
             );
+
+            if (i != 0) {
+                //game.batch.disableBlending();
+                float scale = 0.2f;
+
+                game.batch.setBlendFunction(GL20.GL_BLEND_SRC_ALPHA, GL20.GL_BLEND_DST_ALPHA);
+                game.batch.draw(ropeKnotRegion,
+                        bodyA.getPosition().x - (ropeKnotRegion.getRegionWidth()/2)*scale, //X
+                        bodyA.getPosition().y - (ropeKnotRegion.getRegionHeight()/2)*scale,
+                        (ropeKnotRegion.getRegionWidth()/2)*scale, //OriginX
+                        (ropeKnotRegion.getRegionHeight()/2)*scale, //OriginY
+                        ropeKnotRegion.getRegionWidth(), //Width
+                        ropeKnotRegion.getRegionHeight(), //Height
+                        scale, scale, //Scale
+                        0  //Rotation
+                );
+                //game.batch.enableBlending();
+
+
+            }
         }
 
         int textureWidth = ball.getWidth();

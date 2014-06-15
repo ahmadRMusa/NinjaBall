@@ -32,9 +32,7 @@ import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapRenderer;
@@ -42,7 +40,10 @@ import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.physics.box2d.*;
+import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
+import com.badlogic.gdx.physics.box2d.Fixture;
+import com.badlogic.gdx.physics.box2d.RayCastCallback;
+import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
@@ -58,12 +59,9 @@ import com.nickschatz.ninjaball.util.PlayerContactListener;
 import com.nickschatz.ninjaball.util.TiledLightManager;
 import com.nickschatz.ninjaball.util.Util;
 
-import java.util.List;
-
 public class GameScreen implements Screen {
 
-    private Texture ropeKnotTex;
-    private Texture ropeTex;
+
     private TiledLightManager lightManager;
     private Box2DDebugRenderer debugRenderer;
     private World world;
@@ -75,7 +73,7 @@ public class GameScreen implements Screen {
     private TiledMapRenderer mapRenderer;
     private ShapeRenderer shapeRenderer;
 
-    private Texture ball;
+
     private TiledMap map;
     private boolean isPaused = false;
 
@@ -86,7 +84,6 @@ public class GameScreen implements Screen {
     private Table table;
     private Skin skin;
 
-    private boolean hasRope = false;
     private Vector2 playerGrav;
     private Slider sensitivitySlider;
 
@@ -116,10 +113,7 @@ public class GameScreen implements Screen {
         mapRenderer = new OrthogonalTiledMapRenderer(map, mapScale, game.batch);
         mapBodyManager.createPhysics(map, "physics");
 
-        ball = Resources.get().get("data/ball64x64.png", Texture.class);
-        ropeTex = Resources.get().get("data/rope.png", Texture.class);
-        ropeKnotTex = Resources.get().get("data/ropeKnot.png", Texture.class);
-        ropeKnotTex.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+
 
         stage = new Stage(new ScreenViewport(), game.batch);
 
@@ -272,83 +266,11 @@ public class GameScreen implements Screen {
                         get("background"));
         //debugRenderer.render(world, camera.combined);
 
-        List<Body> ropeBodies = thePlayer.getRopeBodies();
-
-        TextureRegion ropeRegion = new TextureRegion(ropeTex, 0, 0, ropeTex.getWidth(), ropeTex.getHeight());
-        TextureRegion ropeKnotRegion = new TextureRegion(ropeKnotTex, 0, 0, ropeKnotTex.getWidth(), ropeKnotTex.getHeight());
-        for (int i=0;i<ropeBodies.size();i++) {
-
-            Body bodyA = ropeBodies.get(i);
-            Body bodyB;
-            if (i == ropeBodies.size()-1) bodyB = thePlayer.getBody();
-            else bodyB = ropeBodies.get(i+1);
-
-            float angle = bodyA.getPosition().sub(bodyB.getPosition()).cpy().nor().angle();
-            Vector2 midpoint = new Vector2();
-            midpoint.x = (bodyA.getPosition().x - bodyB.getPosition().x) / 2;
-            midpoint.y = (bodyA.getPosition().y - bodyB.getPosition().y) / 2;
-
-            float dst = bodyA.getPosition().dst(bodyB.getPosition());
-
-            Vector2 botLeft = new Vector2();
-            if (bodyA.getPosition().x < bodyB.getPosition().x) {
-                botLeft.x = bodyA.getPosition().x;
-            }
-            else {
-                botLeft.x = bodyB.getPosition().x;
-            }
-            if (bodyA.getPosition().y < bodyB.getPosition().y) {
-                botLeft.y = bodyA.getPosition().y;
-            }
-            else {
-                botLeft.y = bodyB.getPosition().y;
-            }
-
-            float width = 6f;
-
-            game.batch.draw(ropeRegion,
-                    botLeft.x, //X
-                    botLeft.y,
-                    width / 2, //OriginX
-                    dst / 2, //OriginY
-                    width, //Width
-                    dst, //Height
-                    1,1, //Scale
-                    angle+90  //Rotation
-            );
-
-            if (i != 0) {
-                //game.batch.disableBlending();
-                float scale = 0.2f;
-
-                game.batch.setBlendFunction(GL20.GL_BLEND_SRC_ALPHA, GL20.GL_BLEND_DST_ALPHA);
-                game.batch.draw(ropeKnotRegion,
-                        bodyA.getPosition().x - (ropeKnotRegion.getRegionWidth()/2)*scale, //X
-                        bodyA.getPosition().y - (ropeKnotRegion.getRegionHeight()/2)*scale,
-                        (ropeKnotRegion.getRegionWidth()/2)*scale, //OriginX
-                        (ropeKnotRegion.getRegionHeight()/2)*scale, //OriginY
-                        ropeKnotRegion.getRegionWidth(), //Width
-                        ropeKnotRegion.getRegionHeight(), //Height
-                        scale, scale, //Scale
-                        0  //Rotation
-                );
-                //game.batch.enableBlending();
-
-
-            }
+        if (thePlayer.hasRope()) {
+            thePlayer.getRope().draw(game.batch);
         }
 
-        int textureWidth = ball.getWidth();
-        int textureHeight = ball.getHeight();
-
-        TextureRegion ballRegion = new TextureRegion(ball, 0, 0, textureWidth, textureHeight);
-        game.batch.draw(ballRegion,
-                thePlayer.getPosition().x - thePlayer.getRadius(),
-                thePlayer.getPosition().y - thePlayer.getRadius(),
-                thePlayer.getRadius(),
-                thePlayer.getRadius(),
-                thePlayer.getRadius() * 2,
-                thePlayer.getRadius() * 2, 1, 1, (float) Math.toDegrees(thePlayer.getRotation()), false);
+        thePlayer.draw(game.batch);
 
         mapRenderer.renderTileLayer((TiledMapTileLayer) map.getLayers().get("foreground"));
         game.batch.end();

@@ -163,7 +163,9 @@ public class Rope {
     }
 
     public void draw(SpriteBatch batch) {
-
+        if (ropeBodies == null) {
+            return;
+        }
         TextureRegion ropeRegion = new TextureRegion(ropeTex, 0, 0, ropeTex.getWidth(), ropeTex.getHeight());
         TextureRegion ropeKnotRegion = new TextureRegion(ropeKnotTex, 0, 0, ropeKnotTex.getWidth(), ropeKnotTex.getHeight());
         for (int i=0;i<ropeBodies.size();i++) {
@@ -229,6 +231,8 @@ public class Rope {
         }
     }
     public void destroy() {
+        if (ropeJoints == null || ropeBodies == null)
+            return;
         for (Joint j : ropeJoints) {
             world.destroyJoint(j);
         }

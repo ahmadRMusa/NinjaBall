@@ -95,7 +95,7 @@ public class GameScreen implements Screen {
 
     private Music curMusic;
 
-    public GameScreen(NinjaBallGame game, TiledMap map, Music curMusic) {
+    public GameScreen(final NinjaBallGame game, TiledMap map, Music curMusic) {
         this.game = game;
         this.map = map;
         this.curMusic = curMusic;
@@ -124,6 +124,8 @@ public class GameScreen implements Screen {
         debugLabel = new Label("Debug!", skin);
         stage.addActor(debugLabel);
         table = new Table();
+        table.setTransform(true);
+        table.setScale(1.1f);
         table.setFillParent(true);
         stage.addActor(table);
 
@@ -145,13 +147,22 @@ public class GameScreen implements Screen {
         table.add(new Label("Sensitivity: ", skin));
         table.add(sensitivitySlider).row();
         TextButton returnButton = new TextButton("Return", skin);
+        //returnButton.setScale(2);
         returnButton.addListener(new ChangeListener() {
             public void changed(ChangeEvent event, Actor actor) {
                 togglePause();
             }
         });
         table.add(returnButton).padBottom(50).row();
-        table.add(new TextButton("Exit", skin));
+        TextButton exitButton = new TextButton("Exit", skin);
+        exitButton.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                game.setScreen(new MenuScreen(game));
+                dispose();
+            }
+        });
+        table.add(exitButton);
 
         lightManager = new TiledLightManager(new RayHandler(world), map, "lights", Logger.DEBUG);
         lightManager.setAmbientLight(new Color(0.01f, 0.01f, 0.01f, 1f));

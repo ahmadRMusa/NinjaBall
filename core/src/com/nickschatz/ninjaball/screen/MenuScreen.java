@@ -57,6 +57,8 @@ public class MenuScreen implements Screen {
 
         table = new Table();
         table.setFillParent(true);
+        table.setTransform(true);
+        table.setScale(1.1f);
         stage.addActor(table);
         TextureAtlas atlas = Resources.get().get("data/uiskin.atlas", TextureAtlas.class);
         skin = new Skin(Gdx.files.internal("data/uiskin.json"));

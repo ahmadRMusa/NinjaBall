@@ -31,6 +31,7 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.utils.*;
+import com.nickschatz.ninjaball.entity.Sign;
 
 /**
  * @author David Saltares Márquez david.saltares at gmail.com
@@ -155,6 +156,11 @@ public class MapBodyManager {
                 System.out.println("Found exit");
                 fixture.setSensor(true);
                 fixture.setUserData(UserData.EXIT);
+            }
+            else if (objType.equals("sign")) {
+                System.out.println("Found sign");
+                fixture.setSensor(true);
+                fixture.setUserData(new Sign(object.getProperties().get("text", String.class)));
             }
             else {
                 fixture.setUserData(UserData.MAP_PART);

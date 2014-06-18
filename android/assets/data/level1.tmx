@@ -298,6 +298,12 @@
     <property name="type" value="exit"/>
    </properties>
   </object>
+  <object name="sign1" type="sign" x="101" y="8751" width="78" height="67">
+   <properties>
+    <property name="text" value="Welcome to Ninja Ball. Tilt the device to move."/>
+    <property name="type" value="sign"/>
+   </properties>
+  </object>
  </objectgroup>
  <objectgroup name="objects" width="128" height="128"/>
 </map>

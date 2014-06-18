@@ -54,14 +54,17 @@ import com.nickschatz.ninjaball.NinjaBallGame;
 import com.nickschatz.ninjaball.Resources;
 import com.nickschatz.ninjaball.entity.Player;
 import com.nickschatz.ninjaball.input.GameInput;
+import com.nickschatz.ninjaball.physics.ContactListenerDelegate;
+import com.nickschatz.ninjaball.physics.PlayerExitContactExecutor;
+import com.nickschatz.ninjaball.physics.PlayerMapContactExecutor;
 import com.nickschatz.ninjaball.util.MapBodyManager;
-import com.nickschatz.ninjaball.util.PlayerContactListener;
 import com.nickschatz.ninjaball.util.TiledLightManager;
 import com.nickschatz.ninjaball.util.Util;
 
 public class GameScreen implements Screen {
 
 
+    private ContactListenerDelegate contactListenerDelegate;
     private TiledLightManager lightManager;
     private Box2DDebugRenderer debugRenderer;
     private World world;
@@ -106,7 +109,10 @@ public class GameScreen implements Screen {
         debugRenderer = new Box2DDebugRenderer();
 
         thePlayer = new Player(world, 100, 300, 10f);
-        world.setContactListener(new PlayerContactListener(thePlayer, this));
+        contactListenerDelegate = new ContactListenerDelegate();
+        contactListenerDelegate.addContactExecutor(new PlayerMapContactExecutor(thePlayer));
+        contactListenerDelegate.addContactExecutor(new PlayerExitContactExecutor(this));
+        world.setContactListener(contactListenerDelegate);
 
         mapBodyManager = new MapBodyManager(world, 1/mapScale, Gdx.files.internal("data/materials.json"), Application.LOG_DEBUG);
 
